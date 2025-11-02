@@ -10,7 +10,7 @@
 #' 
 #' @examples
 #' x <- "Burkea af"
-#' resp <- callAPI(x, query_NameMatch())
+#' resp <- callAPI(x, query_taxonNameMatch())
 #' pickName(x, resp$data$taxonNameMatch$candidates)
 #' 
 #' @export

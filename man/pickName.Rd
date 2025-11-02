@@ -21,7 +21,7 @@ Manually pick a taxonomic name from a list returned by the WFO GraphQL API
 }
 \examples{
 x <- "Burkea af"
-resp <- callAPI(x, query_NameMatch())
+resp <- callAPI(x, query_taxonNameMatch())
 pickName(x, resp$data$taxonNameMatch$candidates)
 
 }

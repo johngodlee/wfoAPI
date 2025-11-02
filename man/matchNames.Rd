@@ -4,36 +4,56 @@
 \alias{matchNames}
 \title{Match a vector of names and return formatted output}
 \usage{
-matchNames(x, genus_fallback = FALSE, interactive = TRUE, raw = FALSE)
+matchNames(
+  x,
+  fallbackToGenus = FALSE,
+  checkRank = FALSE,
+  checkHomonyms = FALSE,
+  fuzzyNameParts = 0,
+  interactive = TRUE,
+  useCache = FALSE,
+  useAPI = TRUE,
+  raw = FALSE
+)
 }
 \arguments{
 \item{x}{vector of taxonomic names
 If the column values do not include the author strings for the plant names then a authors_col should be
 specified.}
 
-\item{genus_fallback}{logical, if TRUE genus-level matches will be returned
+\item{fallbackToGenus}{logical, if TRUE genus-level matches will be returned
 if no species-level match is available}
+
+\item{checkRank}{logical, if TRUE consider matches to be ambiguous if it is possible to estimate taxonomic rank from the search string and the rank does not match that in the name record}
+
+\item{checkHomonyms}{logical, if TRUE consider matches to be ambiguous if there ar eother names with the same words but different author strings}
+
+\item{fuzzyNameParts}{integer value of 0 (default) or greater. The maximum Levenshtein distance used for fuzzy matching words in \code{x}}
 
 \item{interactive}{logical, if TRUE (default) user will be prompted to pick
 names from a list where multiple ambiguous matches are found, otherwise
 names with multiple ambiguous matches will be skipped}
+
+\item{useCache}{logical, if TRUE use cached values in \code{options("wfo.api_uri")} preferentially, to reduce the number of API calls}
+
+\item{useAPI}{logical, if TRUE (default) allow API calls}
 
 \item{raw}{logical, if TRUE raw a nested list is returned, otherwise a
 dataframe}
 }
 \value{
 data.frame containing taxonomic name information with rows matching
-names in \code{x}, or a list containing unique values in \code{x}
+names in \code{x}, or a list containing unique values in \code{x} if raw = TRUE
 }
 \description{
-Match a vector of names and return formatted output
+This function searches for taxonomic names
 }
 \examples{
 x <- c("Burkea africana", "Julbernardia paniculata", "Fabaceae", 
   "Indet indet", "Brachystegia")
 matchNames(x)
 matchNames(x, raw = TRUE)
-matchNames(x, genus_fallback = TRUE)
+matchNames(x, fallbackToGenus = TRUE)
 matchNames(x, interactive = FALSE)
 
 }

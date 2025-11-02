@@ -1,32 +1,73 @@
 #' Match a vector of names and return formatted output
 #'
+#' @description
+#' This function searches for taxonomic names 
+#'
 #' @param x vector of taxonomic names
 #'     If the column values do not include the author strings for the plant names then a authors_col should be
 #'     specified.
-#' @param genus_fallback logical, if TRUE genus-level matches will be returned
+#' @param fallbackToGenus logical, if TRUE genus-level matches will be returned
 #'     if no species-level match is available
+#' @param checkRank logical, if TRUE consider matches to be ambiguous if it is possible to estimate taxonomic rank from the search string and the rank does not match that in the name record
+#' @param checkHomonyms logical, if TRUE consider matches to be ambiguous if there ar eother names with the same words but different author strings
+#' @param fuzzyNameParts integer value of 0 (default) or greater. The maximum Levenshtein distance used for fuzzy matching words in `x`
 #' @param interactive logical, if TRUE (default) user will be prompted to pick
 #'     names from a list where multiple ambiguous matches are found, otherwise
 #'     names with multiple ambiguous matches will be skipped
+#' @param useCache logical, if TRUE use cached values in `options("wfo.api_uri")` preferentially, to reduce the number of API calls
+#' @param useAPI logical, if TRUE (default) allow API calls
 #' @param raw logical, if TRUE raw a nested list is returned, otherwise a
 #'     dataframe
 #'
 #' @return data.frame containing taxonomic name information with rows matching
-#'     names in `x`, or a list containing unique values in `x`
+#'     names in `x`, or a list containing unique values in `x` if raw = TRUE
 #' 
 #' @export
 #'
 #' @importFrom data.table rbindlist
+#' @importFrom httr2 request req_method req_perform
 #'
 #' @examples
 #' x <- c("Burkea africana", "Julbernardia paniculata", "Fabaceae", 
 #'   "Indet indet", "Brachystegia")
 #' matchNames(x)
 #' matchNames(x, raw = TRUE)
-#' matchNames(x, genus_fallback = TRUE)
+#' matchNames(x, fallbackToGenus = TRUE)
 #' matchNames(x, interactive = FALSE)
 #'
-matchNames <- function(x, genus_fallback = FALSE, interactive = TRUE, raw = FALSE) {
+matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE, 
+  checkHomonyms = FALSE, fuzzyNameParts = 0, interactive = TRUE, 
+  useCache = FALSE, useAPI = TRUE, raw = FALSE) {
+
+  if (!useCache & !useAPI) {
+    stop("Either useCache or useAPI must be TRUE")
+  }
+
+  # Define function to check URL
+  checkURL <- function(url) {
+    tryCatch(
+      {
+        req <- httr2::request(url)
+        req <- httr2::req_method(req, "HEAD")
+        httr2::req_perform(req)
+        TRUE
+      },
+      error = function(e) {
+        FALSE
+      }
+    )
+  }
+
+  # Check if WFO API is reachable 
+  if (!checkURL(options("wfo.api_uri")$wfo.api_uri)) {
+    w <- paste("WFO API unreachable:", options("wfo.api_uri")$wfo.api_uri)
+    if (useCache) {
+      warning(w, "\nOnly cached names will be filled")
+      useAPI <- FALSE
+    } else {
+      stop("\n", w, " and useCache = FALSE, Exiting ...")
+    }
+  }
 
   # Extract unique names 
   xun <- sort(unique(x))
@@ -40,7 +81,14 @@ matchNames <- function(x, genus_fallback = FALSE, interactive = TRUE, raw = FALS
 
     # Submit API query
     c(list(submitted_name = taxon), 
-      matchName(taxon, genus_fallback, interactive))
+      matchName(taxon, 
+        fallbackToGenus = fallbackToGenus, 
+        checkRank = checkRank,
+        checkHomonyms = checkHomonyms,
+        fuzzyNameParts = fuzzyNameParts,
+        useCache = useCache,
+        useAPI = useAPI,
+        interactive = interactive))
   })
 
   # Define helper function to convert NULL values to NA
@@ -62,7 +110,10 @@ matchNames <- function(x, genus_fallback = FALSE, interactive = TRUE, raw = FALS
         data.frame(
           taxon_name_subm = null2na(i$submitted_name),
           method = null2na(i$method),
-          genus_fallback = null2na(i$genus_fallback),
+          fallbackToGenus = null2na(i$fallbackToGenus),
+          checkRank = null2na(i$checkRank),
+          checkHomonyms = null2na(i$checkHomonyms),
+          fuzzyNameParts = null2na(i$fuzzyNameParts),
           taxon_wfo_syn = null2na(i$id),
           taxon_name_syn = null2na(i$fullNameStringNoAuthorsPlain),
           taxon_auth_syn = null2na(i$authorsString),
@@ -81,7 +132,10 @@ matchNames <- function(x, genus_fallback = FALSE, interactive = TRUE, raw = FALS
         data.frame(
           taxon_name_subm = i$submitted_name,
           method = i$method,
-          genus_fallback = i$genus_fallback,
+          fallbackToGenus = i$fallbackToGenus,
+          checkRank = i$checkRank,
+          checkHomonyms = i$checkHomonyms,
+          fuzzyNameParts = i$fuzzyNameParts,
           taxon_wfo_syn = NA_character_,
           taxon_name_syn = NA_character_,
           taxon_auth_syn = NA_character_,

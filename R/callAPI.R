@@ -1,36 +1,45 @@
 #' Call the WorldFlora API to match a taxonomic name
 #'
 #' @param x taxonomic name to be searched 
-#' @param query GraphQL API query string, e.g. as returned `query_NameMatch()`
+#' @param query GraphQL API query string, e.g. as returned `query_taxonNameMatch()`
 #'     or `query_taxonNameById()`
-#' @param genus_fallback logical, if TRUE genus-level matches will be returned
+#' @param fallbackToGenus logical, if TRUE genus-level matches will be returned
 #'     if no species-level match is available
+#' @param checkRank logical, if TRUE consider matches to be ambiguous if it is possible to estimate taxonomic rank from the search string and the rank does not match that in the name record
+#' @param checkHomonyms logical, if TRUE consider matches to be ambiguous if there ar eother names with the same words but different author strings
+#' @param fuzzyNameParts integer value of 0 (default) or greater. The maximum Levenshtein distance used for fuzzy matching words in `x`
 #'
 #' @importFrom httr2 request req_body_json req_perform resp_body_json
 #' @return list representation of JSON returned by API call 
 #' 
 #' @noRd
 #' @examples
-#' callAPI("Burkea africana", query_NameMatch())
+#' callAPI("Burkea africana", query_taxonNameMatch())
 #' callAPI("wfo-0000214110", query_taxonNameById())
 #'
-callAPI <- function(x, query, genus_fallback = FALSE) {
+callAPI <- function(x, query, fallbackToGenus = FALSE, checkRank = FALSE, 
+  checkHomonyms = FALSE, fuzzyNameParts = 0) {
 
   # Create request 
   req <- httr2::request(paste(unlist(options("wfo.api_uri"))))
 
   # prepare the body
-  variables <- list(searchString = x, fallbackToGenus = genus_fallback)
+  variables <- list(
+    searchString = x, 
+    fallbackToGenus = fallbackToGenus,
+    checkRank = checkRank,
+    checkHomonyms = checkHomonyms,
+    fuzzyNameParts = fuzzyNameParts
+  )
   payload <- list(query = query, variables = variables)
 
-  # set the body
-  req <- httr2::req_body_json(req, data = payload, auto_unbox = TRUE)
+  # Set body
+  req <- httr2::req_body_json(req, payload, auto_unbox = TRUE)
 
-  # actually run the request
+  # Run request
   resp <- httr2::req_perform(req)
 
   # return the whole thing as a list of lists
   return(httr2::resp_body_json(resp))
-
 }
 

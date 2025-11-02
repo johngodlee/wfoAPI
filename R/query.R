@@ -4,16 +4,21 @@
 #' 
 #' @noRd
 #' 
-query_NameMatch <- function() {
+query_taxonNameMatch <- function() {
   "query NameMatch(
     $searchString: String, 
-    $fallbackToGenus: Boolean)
+    $checkHomonyms: Boolean,
+    $checkRank: Boolean,
+    $fallbackToGenus: Boolean
+    $fuzzyNameParts: Int
+  )
     {
       taxonNameMatch(
         inputString: $searchString
-        checkHomonyms: false
-        checkRank: false
+        checkHomonyms: $checkHomonyms
+        checkRank: $checkRank
         fallbackToGenus: $fallbackToGenus
+        fuzzyNameParts: $fuzzyNameParts
       ) {
         inputString
         searchString
@@ -76,7 +81,6 @@ query_NameMatch <- function() {
       }
     }"
 }
-
 
 #' Define WFO GraphQL API query for WFO ID matching
 #'

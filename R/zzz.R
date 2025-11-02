@@ -15,7 +15,7 @@
   
   # Send startup messages
   packageStartupMessage(
-    "WFO API URI set: ", options('wfo.api_uri')
+    "WFO API URI set: ", options("wfo.api_uri")
   )
   wfo_cache_status()
 }
