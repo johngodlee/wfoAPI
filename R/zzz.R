@@ -10,7 +10,7 @@
 }
 
 .onAttach <- function(libname, pkgname) {
-  # Initiate cache 
+  # Initiate WFO names cache 
   wfo_cache_init()
   
   # Send startup messages

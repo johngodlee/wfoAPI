@@ -1,7 +1,4 @@
-#' Match a vector of names and return formatted output
-#'
-#' @description
-#' This function searches for taxonomic names 
+#' Correct and match taxonomic names to the World Flora Online database
 #'
 #' @param x vector of taxonomic names
 #'     If the column values do not include the author strings for the plant names then a authors_col should be
