@@ -23,23 +23,33 @@ callAPI <- function(x, query, fallbackToGenus = FALSE, checkRank = FALSE,
   # Create request 
   req <- httr2::request(paste(unlist(options("wfo.api_uri"))))
 
-  # prepare the body
-  variables <- list(
-    searchString = x, 
-    fallbackToGenus = fallbackToGenus,
-    checkRank = checkRank,
-    checkHomonyms = checkHomonyms,
-    fuzzyNameParts = fuzzyNameParts
-  )
-  payload <- list(query = query, variables = variables)
+  # Convert empty strings to NA
+  if (trimws(x) == "" | is.na(x)) { 
+    x <- NA
+  }
 
-  # Set body
-  req <- httr2::req_body_json(req, payload, auto_unbox = TRUE)
+  # If entry is valid
+  if (!is.na(x)) { 
+    # prepare the body
+    variables <- list(
+      searchString = x, 
+      fallbackToGenus = fallbackToGenus,
+      checkRank = checkRank,
+      checkHomonyms = checkHomonyms,
+      fuzzyNameParts = fuzzyNameParts
+    )
+    payload <- list(query = query, variables = variables)
 
-  # Run request
-  resp <- httr2::req_perform(req)
+    # Set body
+    req <- httr2::req_body_json(req, payload, auto_unbox = TRUE)
 
-  # return the whole thing as a list of lists
-  return(httr2::resp_body_json(resp))
+    # Run request
+    resp <- httr2::req_perform(req)
+
+    # return the whole thing as a list of lists
+    return(httr2::resp_body_json(resp))
+  } else {
+    return(NULL)
+  }
 }
 
