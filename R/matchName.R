@@ -3,13 +3,19 @@
 #' @param x taxonomic name to be searched 
 #' @param fallbackToGenus logical, if TRUE genus-level matches will be returned
 #'     if no species-level match is available
-#' @param checkRank logical, if TRUE consider matches to be ambiguous if it is possible to estimate taxonomic rank from the search string and the rank does not match that in the name record
-#' @param checkHomonyms logical, if TRUE consider matches to be ambiguous if there ar eother names with the same words but different author strings
-#' @param fuzzyNameParts integer value of 0 (default) or greater. The maximum Levenshtein distance used for fuzzy matching words in `x`
+#' @param checkRank logical, if TRUE consider matches to be ambiguous if it is
+#'     possible to estimate taxonomic rank from the search string and the rank
+#'     does not match that in the name record
+#' @param checkHomonyms logical, if TRUE consider matches to be ambiguous if
+#'     there are other names with the same words but different author strings
+#' @param fuzzyNameParts integer value of 0 (default) or greater. The maximum
+#'     Levenshtein distance used for fuzzy matching words in `x`
 #' @param interactive logical, if TRUE (default) user will be prompted to pick
 #'     names from a list where multiple ambiguous matches are found, otherwise
 #'     names with multiple ambiguous matches will be skipped
-#' @param useCache logical, if TRUE use cached values in `options("wfo.api_uri")` preferentially, to reduce the number of API calls
+#' @param useCache logical, if TRUE use cached values in
+#'     `options("wfo.api_uri")` preferentially, to reduce the number of API
+#'     calls
 #' @param useAPI logical, if TRUE (default) allow API calls
 #'
 #' @return list representation of JSON returned by API call 
