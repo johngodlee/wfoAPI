@@ -14,6 +14,9 @@
 #'     there are other names with the same words but different author strings
 #' @param fuzzyNameParts integer value of 0 (default) or greater. The maximum
 #'     Levenshtein distance used for fuzzy matching words in `x`
+#' @param preferAccepted logical, if TRUE, if multiple ambiguous matches are
+#'     found, and if there is only one candidate is an "accepted" name,
+#'     automatically choose that name
 #' @param interactive logical, if TRUE (default) user will be prompted to pick
 #'     names from a list where multiple ambiguous matches are found, otherwise
 #'     names with multiple ambiguous matches will be skipped
@@ -48,8 +51,8 @@
 #' matchNames(x, interactive = FALSE)
 #'
 matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE, 
-  checkHomonyms = FALSE, fuzzyNameParts = 0, interactive = TRUE, 
-  useCache = FALSE, useAPI = TRUE, raw = FALSE) {
+  checkHomonyms = FALSE, fuzzyNameParts = 0, preferAccepted = FALSE,
+   interactive = TRUE, useCache = FALSE, useAPI = TRUE, raw = FALSE) {
 
   if (!useCache & !useAPI) {
     stop("Either useCache or useAPI must be TRUE")
@@ -98,6 +101,7 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
         checkRank = checkRank,
         checkHomonyms = checkHomonyms,
         fuzzyNameParts = fuzzyNameParts,
+        preferAccepted = preferAccepted,
         useCache = useCache,
         useAPI = useAPI,
         interactive = interactive))

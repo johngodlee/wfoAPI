@@ -10,6 +10,7 @@ matchNames(
   checkRank = FALSE,
   checkHomonyms = FALSE,
   fuzzyNameParts = 0,
+  preferAccepted = FALSE,
   interactive = TRUE,
   useCache = FALSE,
   useAPI = TRUE,
@@ -31,6 +32,10 @@ there are other names with the same words but different author strings}
 
 \item{fuzzyNameParts}{integer value of 0 (default) or greater. The maximum
 Levenshtein distance used for fuzzy matching words in \code{x}}
+
+\item{preferAccepted}{logical, if TRUE, if multiple ambiguous matches are
+found, and if there is only one candidate is an "accepted" name,
+automatically choose that name}
 
 \item{interactive}{logical, if TRUE (default) user will be prompted to pick
 names from a list where multiple ambiguous matches are found, otherwise

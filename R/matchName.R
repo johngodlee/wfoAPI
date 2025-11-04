@@ -10,6 +10,9 @@
 #'     there are other names with the same words but different author strings
 #' @param fuzzyNameParts integer value of 0 (default) or greater. The maximum
 #'     Levenshtein distance used for fuzzy matching words in `x`
+#' @param preferAccepted logical, if TRUE, if multiple ambiguous matches are
+#'     found, and if there is only one candidate is an "accepted" name,
+#'     automatically choose that name
 #' @param interactive logical, if TRUE (default) user will be prompted to pick
 #'     names from a list where multiple ambiguous matches are found, otherwise
 #'     names with multiple ambiguous matches will be skipped
@@ -25,8 +28,8 @@
 #' matchName("Burkea africana")
 #' 
 matchName <- function(x, fallbackToGenus = FALSE, checkRank = FALSE, 
-  checkHomonyms = FALSE, fuzzyNameParts = 0, useCache = FALSE, useAPI = TRUE,
-  interactive = TRUE) {
+  checkHomonyms = FALSE, fuzzyNameParts = 0, preferAccepted = FALSE, 
+  useCache = FALSE, useAPI = TRUE, interactive = TRUE) {
 
   # Search cache for name 
   if (useCache && x %in% names(wfo_cache$names) ) {
@@ -42,8 +45,18 @@ matchName <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
       fuzzyNameParts = fuzzyNameParts)
 
     # If interactive and name not found
-    if (is.null(response$data$taxonNameMatch$match) & interactive) {
-      match <- pickName(x, response$data$taxonNameMatch$candidates)
+    cand_roles <- unlist(lapply(response$data$taxonNameMatch$candidates, "[[", "role")) 
+    if (is.null(response$data$taxonNameMatch$match)) {
+      if (preferAccepted && sum(cand_roles == "accepted") == 1) {
+        match <- response$data$taxonNameMatch$candidates[[which(cand_roles == "accepted")]]
+        match$method <- "AUTO ACC"
+      } else if (interactive) {
+        match <- pickName(x, response$data$taxonNameMatch$candidates)
+      } else {
+        cat(sprintf("No cached name for: %s\n", x))
+        match <- list()
+        match$method <- "EMPTY"
+      }
     } else {
       match <- response$data$taxonNameMatch$match
       match$method <- "AUTO"
