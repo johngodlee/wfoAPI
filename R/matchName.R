@@ -72,6 +72,7 @@ matchName <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
   match$checkRank <- checkRank
   match$checkHomonyms <- checkHomonyms
   match$fuzzyNameParts <- fuzzyNameParts 
+  match$preferAccepted <- preferAccepted 
 
   # Store result in cache
   if (match$method %in% c("AUTO", "MANUAL") & 
