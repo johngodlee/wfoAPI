@@ -21,11 +21,13 @@
 #'     names from a list where multiple ambiguous matches are found, otherwise
 #'     names with multiple ambiguous matches will be skipped
 #' @param useCache logical, if TRUE use cached values in
-#'     `options("wfo.api_uri")` preferentially, to reduce the number of API
+#'     `.GlobalEnv : wfo_cache` preferentially, to reduce the number of API
 #'     calls
 #' @param useAPI logical, if TRUE (default) allow API calls
 #' @param raw logical, if TRUE raw a nested list is returned, otherwise a
 #'     dataframe
+#' @param delay number of seconds to pause between API calls. Used to
+#'     rate-limit repeated API calls
 #'
 #' @return data.frame containing taxonomic name information with rows matching
 #'     names in `x`, or a list containing unique values in `x` if raw = TRUE
@@ -52,7 +54,8 @@
 #'
 matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE, 
   checkHomonyms = FALSE, fuzzyNameParts = 0, preferAccepted = FALSE,
-   interactive = TRUE, useCache = FALSE, useAPI = TRUE, raw = FALSE) {
+  interactive = TRUE, useCache = FALSE, useAPI = TRUE, raw = FALSE, 
+  delay = 0) {
 
   if (!useCache & !useAPI) {
     stop("Either useCache or useAPI must be TRUE")
@@ -74,8 +77,8 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
   }
 
   # Check if WFO API is reachable 
-  if (!checkURL(options("wfo.api_uri")$wfo.api_uri)) {
-    w <- paste("WFO API unreachable:", options("wfo.api_uri")$wfo.api_uri)
+  if (!checkURL(getOption("wfo.api_uri"))) {
+    w <- paste("WFO API unreachable:", getOption("wfo.api_uri"))
     if (useCache) {
       warning(w, "\nOnly cached names will be filled")
       useAPI <- FALSE
@@ -104,7 +107,8 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
         preferAccepted = preferAccepted,
         useCache = useCache,
         useAPI = useAPI,
-        interactive = interactive))
+        interactive = interactive,
+        delay = delay))
   })
 
   # Define helper function to convert NULL values to NA

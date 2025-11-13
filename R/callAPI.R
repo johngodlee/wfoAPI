@@ -12,6 +12,8 @@
 #'     there are other names with the same words but different author strings
 #' @param fuzzyNameParts integer value of 0 (default) or greater. The maximum
 #'     Levenshtein distance used for fuzzy matching words in `x`
+#' @param delay number of seconds to pause between API calls. Used to
+#'     rate-limit repeated API calls
 #'
 #' @importFrom httr2 request req_body_json req_perform resp_body_json
 #' @return list representation of JSON returned by API call 
@@ -22,10 +24,10 @@
 #' callAPI("wfo-0000214110", query_taxonNameById())
 #'
 callAPI <- function(x, query, fallbackToGenus = FALSE, checkRank = FALSE, 
-  checkHomonyms = FALSE, fuzzyNameParts = 0) {
+  checkHomonyms = FALSE, fuzzyNameParts = 0, delay = 0) {
 
   # Create request 
-  req <- httr2::request(paste(unlist(options("wfo.api_uri"))))
+  req <- httr2::request(getOption("wfo.api_uri"))
 
   # Convert empty strings to NA
   if (trimws(x) == "" | is.na(x)) { 
@@ -46,6 +48,9 @@ callAPI <- function(x, query, fallbackToGenus = FALSE, checkRank = FALSE,
 
     # Set body
     req <- httr2::req_body_json(req, payload, auto_unbox = TRUE)
+
+    # Rate limit: pause before making the request
+    Sys.sleep(delay)
 
     # Run request
     resp <- httr2::req_perform(req)

@@ -4,14 +4,20 @@
 \alias{pickName}
 \title{Manually pick a taxonomic name from a list returned by the WFO GraphQL API}
 \usage{
-pickName(x, cand, offset = 0, page_size = 10)
+pickName(x, cand, offset = 0, page_size = 10, delay = 0)
 }
 \arguments{
 \item{x}{original taxonomic name searched by \code{callAPI()}}
 
 \item{cand}{list of candidate taxa returned by \code{callAPI()}}
 
-\item{offset}{index value used internally by pager, controls page length}
+\item{offset}{initial index value used internally by pager, controls index
+of page start}
+
+\item{page_size}{index value used internally by pager, controls page length}
+
+\item{delay}{number of seconds to pause before sending the API call. Used to
+rate-limit repeated API calls}
 }
 \value{
 list containing information of matched taxonomic name

@@ -13,13 +13,15 @@
 #' @param preferAccepted logical, if TRUE, if multiple ambiguous matches are
 #'     found, and if there is only one candidate is an "accepted" name,
 #'     automatically choose that name
+#' @param useCache logical, if TRUE use cached values in
+#'     `.GlobalEnv : wfo_cache` preferentially, to reduce the number of API
+#'     calls
+#' @param useAPI logical, if TRUE (default) allow API calls
 #' @param interactive logical, if TRUE (default) user will be prompted to pick
 #'     names from a list where multiple ambiguous matches are found, otherwise
 #'     names with multiple ambiguous matches will be skipped
-#' @param useCache logical, if TRUE use cached values in
-#'     `options("wfo.api_uri")` preferentially, to reduce the number of API
-#'     calls
-#' @param useAPI logical, if TRUE (default) allow API calls
+#' @param delay number of seconds to pause before sending the API call. Used to
+#'     rate-limit repeated API calls
 #'
 #' @return list representation of JSON returned by API call 
 #' 
@@ -29,7 +31,7 @@
 #' 
 matchName <- function(x, fallbackToGenus = FALSE, checkRank = FALSE, 
   checkHomonyms = FALSE, fuzzyNameParts = 0, preferAccepted = FALSE, 
-  useCache = FALSE, useAPI = TRUE, interactive = TRUE) {
+  useCache = FALSE, useAPI = TRUE, interactive = TRUE, delay = 0) {
 
   # Search cache for name 
   if (useCache && x %in% names(wfo_cache$names) ) {
@@ -42,7 +44,8 @@ matchName <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
       fallbackToGenus = fallbackToGenus,
       checkRank = checkRank,
       checkHomonyms = checkHomonyms,
-      fuzzyNameParts = fuzzyNameParts)
+      fuzzyNameParts = fuzzyNameParts,
+      delay = delay)
 
     # If interactive and name not found
     cand_roles <- unlist(lapply(response$data$taxonNameMatch$candidates, "[[", "role")) 
@@ -51,7 +54,9 @@ matchName <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
         match <- response$data$taxonNameMatch$candidates[[which(cand_roles == "accepted")]]
         match$method <- "AUTO ACC"
       } else if (interactive) {
-        match <- pickName(x, response$data$taxonNameMatch$candidates)
+        match <- pickName(x, 
+          response$data$taxonNameMatch$candidates,
+          delay = delay)
       } else {
         cat(sprintf("No cached name for: %s\n", x))
         match <- list()

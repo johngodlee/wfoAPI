@@ -14,7 +14,8 @@ matchNames(
   interactive = TRUE,
   useCache = FALSE,
   useAPI = TRUE,
-  raw = FALSE
+  raw = FALSE,
+  delay = 0
 )
 }
 \arguments{
@@ -42,13 +43,16 @@ names from a list where multiple ambiguous matches are found, otherwise
 names with multiple ambiguous matches will be skipped}
 
 \item{useCache}{logical, if TRUE use cached values in
-\code{options("wfo.api_uri")} preferentially, to reduce the number of API
+\code{.GlobalEnv : wfo_cache} preferentially, to reduce the number of API
 calls}
 
 \item{useAPI}{logical, if TRUE (default) allow API calls}
 
 \item{raw}{logical, if TRUE raw a nested list is returned, otherwise a
 dataframe}
+
+\item{delay}{number of seconds to pause between API calls. Used to
+rate-limit repeated API calls}
 }
 \value{
 data.frame containing taxonomic name information with rows matching
