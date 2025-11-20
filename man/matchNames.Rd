@@ -15,7 +15,8 @@ matchNames(
   useCache = FALSE,
   useAPI = TRUE,
   raw = FALSE,
-  delay = 0
+  capacity = 60,
+  fill_time_s = 60
 )
 }
 \arguments{
@@ -51,8 +52,10 @@ calls}
 \item{raw}{logical, if TRUE raw a nested list is returned, otherwise a
 dataframe}
 
-\item{delay}{number of seconds to pause between API calls. Used to
-rate-limit repeated API calls}
+\item{capacity}{maximum number of API calls which can accumulate over the
+duration of \code{fill_time_s}. See documentation for \code{httr2::req_throttle()}
+ @param fill_time_s time in seconds to refill the capacity for repeated API
+calls. See documentation for \code{httr2::req_throttle()}}
 }
 \value{
 data.frame containing taxonomic name information with rows matching

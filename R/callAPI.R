@@ -17,7 +17,6 @@
 #' @param fill_time_s time in seconds to refill the capacity for repeated API 
 #'     calls. See documentation for `httr2::req_throttle()`
 #'
-#' @importFrom httr2 request req_body_json req_perform resp_body_json
 #' @return list representation of JSON returned by API call 
 #' 
 #' @noRd
@@ -29,7 +28,7 @@ callAPI <- function(x, query, fallbackToGenus = FALSE, checkRank = FALSE,
   checkHomonyms = FALSE, fuzzyNameParts = 0, capacity = 60, fill_time_s = 60) {
 
   # Create request 
-  req <- httr2::request(getOption("wfo.api_uri"))
+ req <- httr2::request(getOption("wfo.api_uri"))
 
   # Convert empty strings to NA
   if (trimws(x) == "" | is.na(x)) { 

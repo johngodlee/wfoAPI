@@ -24,10 +24,7 @@ query_taxonNameMatch <- function() {
         searchString
         match {
           id
-          fullNameStringPlain
           fullNameStringNoAuthorsPlain
-          genusString
-          nameString
           authorsString
           nomenclaturalStatus
           role
@@ -36,10 +33,7 @@ query_taxonNameMatch <- function() {
           currentPreferredUsage {
             hasName {
               id
-              fullNameStringPlain
               fullNameStringNoAuthorsPlain
-              genusString
-              nameString
               authorsString
               nomenclaturalStatus
               role
@@ -50,10 +44,7 @@ query_taxonNameMatch <- function() {
         }
         candidates {
           id
-          fullNameStringPlain
           fullNameStringNoAuthorsPlain
-          genusString
-          nameString
           authorsString
           nomenclaturalStatus
           role
@@ -62,10 +53,7 @@ query_taxonNameMatch <- function() {
           currentPreferredUsage {
             hasName {
               id
-              fullNameStringPlain
               fullNameStringNoAuthorsPlain
-              genusString
-              nameString
               authorsString
               nomenclaturalStatus
               role
@@ -96,10 +84,7 @@ query_taxonNameById <- function() {
         nameId: $searchString
       ) {
         id
-        fullNameStringPlain
         fullNameStringNoAuthorsPlain
-        genusString
-        nameString
         authorsString
         nomenclaturalStatus
         role
@@ -108,10 +93,7 @@ query_taxonNameById <- function() {
         currentPreferredUsage {
           hasName {
             id
-            fullNameStringPlain
             fullNameStringNoAuthorsPlain
-            genusString
-            nameString
             authorsString
             nomenclaturalStatus
             role
@@ -124,6 +106,8 @@ query_taxonNameById <- function() {
 }
 
 #' Define WFO GraphQL API query for WFO ID concept matching
+#' 
+#' Used to return higher order taxonomic rank information
 #'
 #' @return character string with WFO GraphQL API query
 #' 
@@ -136,14 +120,15 @@ query_taxonConceptById <- function() {
     taxonConceptById(
       taxonId: $searchString
     ) {
-      hasName {
-        id
-        rank
-      }
-      isPartOf {
+      path {
         hasName {
           id
+          fullNameStringNoAuthorsPlain
+          authorsString
+          nomenclaturalStatus
+          role
           rank
+          wfoPath
         }
       }
     }

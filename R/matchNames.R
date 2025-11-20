@@ -43,9 +43,6 @@
 #' 
 #' @export
 #'
-#' @importFrom data.table rbindlist
-#' @importFrom httr2 request req_method req_perform
-#'
 #' @examples
 #' x <- c("Burkea africana", "Julbernardia paniculata", "Fabaceae", 
 #'   "Indet indet", "Brachystegia")
@@ -186,7 +183,7 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
     out <- match_list
   } else {
     # Create formatted dataframe
-    out <- data.table::rbindlist(lapply(match_list, function(i) { 
+    out <- do.call(rbind, lapply(match_list, function(i) { 
       if ("id" %in% names(i)) {
         data.frame(
           taxon_name_subm = null2na(i$submitted_name),
