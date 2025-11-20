@@ -5,8 +5,6 @@
 #' @param offset initial index value used internally by pager, controls index
 #'     of page start
 #' @param page_size index value used internally by pager, controls page length
-#' @param delay number of seconds to pause before sending the API call. Used to
-#'     rate-limit repeated API calls
 #'
 #' @return list containing information of matched taxonomic name
 #' 
@@ -17,7 +15,7 @@
 #' 
 #' @export
 #' 
-pickName <- function(x, cand, offset = 0, page_size = 10, delay = 0) {
+pickName <- function(x, cand, offset = 0, page_size = 10) {
 
   # If no candidates, SKIP
   if (length(cand) == 0) {
@@ -73,20 +71,22 @@ pickName <- function(x, cand, offset = 0, page_size = 10, delay = 0) {
       valid <- TRUE
     } else if (grepl("^wfo-[0-9]{10}$", tolower(trimws(input)))) {
       input <- tolower(trimws(input))
-      match <- callAPI(input, 
-        query_taxonNameById(),
-        delay = delay)$data$taxonNameById
+      api_call <- callAPI(input, 
+        query_taxonNameById())
+      api_resp <- httr2::req_perform(api_call)
+      api_json <- httr2::resp_body_json(api_resp)
+      match <- api_json$data$taxonNameById
       match$method <- "MANUAL"
       valid <- TRUE
     } else if (tolower(input) == "n") {
       if (end_page < length(cand)) {
-        return(pickName(x, cand, offset + page_size, page_size, delay = delay))
+        return(pickName(x, cand, offset + page_size, page_size))
       } else {
         cat("Already on last page.\n")
       }
     } else if (tolower(input) == "p") {
       if (start_page > 1) {
-        return(pickName(x, cand, offset - page_size, page_size, delay = delay))
+        return(pickName(x, cand, offset - page_size, page_size))
       } else {
         cat("Already on first page.\n")
       }

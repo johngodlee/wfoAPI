@@ -123,3 +123,29 @@ query_taxonNameById <- function() {
     }"
 }
 
+#' Define WFO GraphQL API query for WFO ID concept matching
+#'
+#' @return character string with WFO GraphQL API query
+#' 
+#' @noRd
+#' 
+query_taxonConceptById <- function() {
+  "query ConceptByID(
+    $searchString: String)
+  {
+    taxonConceptById(
+      taxonId: $searchString
+    ) {
+      hasName {
+        id
+        rank
+      }
+      isPartOf {
+        hasName {
+          id
+          rank
+        }
+      }
+    }
+  }"
+}

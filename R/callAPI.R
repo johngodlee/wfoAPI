@@ -12,8 +12,10 @@
 #'     there are other names with the same words but different author strings
 #' @param fuzzyNameParts integer value of 0 (default) or greater. The maximum
 #'     Levenshtein distance used for fuzzy matching words in `x`
-#' @param delay number of seconds to pause between API calls. Used to
-#'     rate-limit repeated API calls
+#' @param capacity maximum number of API calls which can accumulate over the 
+#'     duration of `fill_time_s`. See documentation for `httr2::req_throttle()`
+#' @param fill_time_s time in seconds to refill the capacity for repeated API 
+#'     calls. See documentation for `httr2::req_throttle()`
 #'
 #' @importFrom httr2 request req_body_json req_perform resp_body_json
 #' @return list representation of JSON returned by API call 
@@ -24,7 +26,7 @@
 #' callAPI("wfo-0000214110", query_taxonNameById())
 #'
 callAPI <- function(x, query, fallbackToGenus = FALSE, checkRank = FALSE, 
-  checkHomonyms = FALSE, fuzzyNameParts = 0, delay = 0) {
+  checkHomonyms = FALSE, fuzzyNameParts = 0, capacity = 60, fill_time_s = 60) {
 
   # Create request 
   req <- httr2::request(getOption("wfo.api_uri"))
@@ -49,14 +51,13 @@ callAPI <- function(x, query, fallbackToGenus = FALSE, checkRank = FALSE,
     # Set body
     req <- httr2::req_body_json(req, payload, auto_unbox = TRUE)
 
-    # Rate limit: pause before making the request
-    Sys.sleep(delay)
+    # Set throttle to avoid rate-limiting 
+    req <- httr2::req_throttle(req, 
+      capacity = capacity, 
+      fill_time_s = fill_time_s)
 
-    # Run request
-    resp <- httr2::req_perform(req)
-
-    # return the whole thing as a list of lists
-    return(httr2::resp_body_json(resp))
+    # Return
+    return(req)
   } else {
     return(NULL)
   }

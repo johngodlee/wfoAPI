@@ -26,8 +26,10 @@
 #' @param useAPI logical, if TRUE (default) allow API calls
 #' @param raw logical, if TRUE raw a nested list is returned, otherwise a
 #'     dataframe
-#' @param delay number of seconds to pause between API calls. Used to
-#'     rate-limit repeated API calls
+#' @param capacity maximum number of API calls which can accumulate over the 
+#'     duration of `fill_time_s`. See documentation for `httr2::req_throttle()`
+#' @param fill_time_s time in seconds to refill the capacity for repeated API 
+#'     calls. See documentation for `httr2::req_throttle()`
 #'
 #' @return data.frame containing taxonomic name information with rows matching
 #'     names in `x`, or a list containing unique values in `x` if raw = TRUE
@@ -55,7 +57,7 @@
 matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE, 
   checkHomonyms = FALSE, fuzzyNameParts = 0, preferAccepted = FALSE,
   interactive = TRUE, useCache = FALSE, useAPI = TRUE, raw = FALSE, 
-  delay = 0) {
+  capacity = 60, fill_time_s = 60) {
 
   if (!useCache & !useAPI) {
     stop("Either useCache or useAPI must be TRUE")
@@ -91,25 +93,84 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
   xun <- sort(unique(x))
   xlen <- length(xun)
 
-  # For each unique taxonomic name 
-  resp_list <- lapply(seq_along(xun), function(i) {
-    taxon <- xun[i]
+  # Optionally search cache for names
+  match_cache_list <- list()
+  if (useCache) {
+    # Extract cached names
+    match_cache_list <- the$wfo_cache[xun]
 
-    cat(sprintf("%i of %i:\t%s\n", i, xlen, taxon))
+    # Remove names matched in cache from vector of names
+    xun <- xun[!xun %in% names(match_cache_list)]
+    xlen <- length(xun)
 
-    # Submit API query
-    c(list(submitted_name = taxon), 
-      matchName(taxon, 
-        fallbackToGenus = fallbackToGenus, 
-        checkRank = checkRank,
-        checkHomonyms = checkHomonyms,
-        fuzzyNameParts = fuzzyNameParts,
-        preferAccepted = preferAccepted,
-        useCache = useCache,
-        useAPI = useAPI,
-        interactive = interactive,
-        delay = delay))
-  })
+    # Message
+    cat(sprintf("Using cached data for %s species\n", length(match_cache_list)))
+  }
+
+  # For each taxonomic name (optionally excluding names matched in cache)
+  # Construct API calls
+  if (useAPI) {
+    api_call_list <- list()
+    for (i in seq_along(xun)) {
+      api_call_list[[i]] <- callAPI(xun[i], 
+          query = query_taxonNameMatch(), 
+          fallbackToGenus = fallbackToGenus, 
+          checkRank = checkRank,
+          checkHomonyms = checkHomonyms,
+          fuzzyNameParts = fuzzyNameParts,
+          capacity = capacity,
+          fill_time_s = fill_time_s)
+    }
+
+    # Submit API calls
+    api_resp_list <- httr2::req_perform_parallel(api_call_list)
+
+    # Convert API responses to JSON
+    api_json_list <- lapply(api_resp_list, httr2::resp_body_json)
+
+    # Collect matched names 
+    match_api_list <- list()
+    for (i in seq_along(api_json_list)) {
+      # List status of candidate matches (accepted, synonym, unplaced, etc.) 
+      cand_roles <- unlist(lapply(
+          api_json_list[[i]]$data$taxonNameMatch$candidates, "[[", "role")) 
+
+      # If unambiguous match found
+      if (!is.null(api_json_list[[i]]$data$taxonNameMatch$match)) {
+        # Singular accepted name
+        match_api_list[[i]] <- api_json_list[[i]]$data$taxonNameMatch$match
+        match_api_list[[i]]$method <- "AUTO"
+      } else {
+        if (preferAccepted && sum(cand_roles == "accepted") == 1) {
+          # Auto-accept singular accepted name
+          match_api_list[[i]] <- api_json_list[[i]]$data$taxonNameMatch$candidates[[
+            which(cand_roles == "accepted")]]
+          match_api_list[[i]]$method <- "AUTO ACC"
+        } else if (interactive) {
+          # Interactive name picking
+          match_api_list[[i]] <- pickName(x, api_json_list[[i]]$data$taxonNameMatch$candidates)
+        } else {
+          # No successful match
+          cat(sprintf("No cached name for: %s\n", x))
+          match_api_list[[i]] <- list()
+          match_api_list[[i]]$method <- "EMPTY"
+        }
+      }
+
+      # Add query parameters
+      match_api_list[[i]]$submitted_name <- xun[i]
+      match_api_list[[i]]$fallbackToGenus <- fallbackToGenus
+      match_api_list[[i]]$checkRank <- checkRank
+      match_api_list[[i]]$checkHomonyms <- checkHomonyms
+      match_api_list[[i]]$fuzzyNameParts <- fuzzyNameParts 
+      match_api_list[[i]]$preferAccepted <- preferAccepted 
+    }
+    names(match_api_list) <- xun
+
+  }
+
+  # Combine match lists
+  match_list <- c(match_cache_list, match_api_list)
 
   # Define helper function to convert NULL values to NA
   null2na <- function(x) {
@@ -122,10 +183,10 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
 
   if (raw) {
     # Return raw list output
-    out <- resp_list
+    out <- match_list
   } else {
     # Create formatted dataframe
-    out <- data.table::rbindlist(lapply(resp_list, function(i) { 
+    out <- data.table::rbindlist(lapply(match_list, function(i) { 
       if ("id" %in% names(i)) {
         data.frame(
           taxon_name_subm = null2na(i$submitted_name),
@@ -178,6 +239,12 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
     # Match row order of dataframe to x
     out <- out[match(x, out$taxon_name_subm),]
   }
+
+  # Store good API results in cache
+  match_api_good_list <- match_api_list[
+    unlist(lapply(match_api_list, "[[", "method")) %in% c("AUTO", "MANUAL") &
+    !names(match_api_list) %in% names(the$wfo_cache)]
+  the$wfo_cache <- c(the$wfo_cache, match_api_good_list)
 
   # Return
   return(out)
