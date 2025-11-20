@@ -169,15 +169,6 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
   # Combine match lists
   match_list <- c(match_cache_list, match_api_list)
 
-  # Define helper function to convert NULL values to NA
-  null2na <- function(x) {
-    if (is.null(x)) {
-      NA_character_ 
-    } else { 
-      x
-    }
-  }
-
   if (raw) {
     # Return raw list output
     out <- match_list

@@ -39,10 +39,11 @@ pickName <- function(x, cand, offset = 0, page_size = 10) {
   for (i in start_page:end_page) {
     cat(
       sprintf(
-        "%-4s%s\t%s\t%s\t%s\n",
+        "%-4s%s\t%s\t%s\t%s\t%s\n",
         i,
         cand[[i]]$id,
-        cand[[i]]$fullNameStringPlain,
+        cand[[i]]$fullNameStringNoAuthorsPlain,
+        cand[[i]]$authorsString,
         cand[[i]]$role,
         cand[[i]]$wfoPath
       )
