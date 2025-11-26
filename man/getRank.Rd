@@ -15,7 +15,8 @@ duration of \code{fill_time_s}. See documentation for \code{httr2::req_throttle(
 calls. See documentation for \code{httr2::req_throttle()}}
 }
 \value{
-dataframe with the higher order taxonomic ranks of the submitted WFO IDs
+list of dataframes with the higher order taxonomic ranks of each of
+the submitted WFO IDs
 }
 \description{
 Get higher order taxonomic information for WFO IDs

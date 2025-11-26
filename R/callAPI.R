@@ -18,7 +18,7 @@
 #' @param fill_time_s time in seconds to refill the capacity for repeated API 
 #'     calls. See documentation for `httr2::req_throttle()`
 #'
-#' @import httr2_request object containing API call
+#' @return object containing API call
 #' 
 #' @noRd
 #' @examples

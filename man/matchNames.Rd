@@ -8,10 +8,11 @@ matchNames(
   x,
   fallbackToGenus = FALSE,
   checkRank = FALSE,
-  checkHomonyms = FALSE,
-  fuzzyNameParts = 0,
-  preferAccepted = FALSE,
+  checkHomonyms = TRUE,
+  fuzzyNameParts = 3,
   interactive = TRUE,
+  preferAccepted = FALSE,
+  preferFuzzy = FALSE,
   useCache = FALSE,
   useAPI = TRUE,
   raw = FALSE,
@@ -29,19 +30,27 @@ if no species-level match is available}
 possible to estimate taxonomic rank from the search string and the rank
 does not match that in the name record}
 
-\item{checkHomonyms}{logical, if TRUE consider matches to be ambiguous if
-there are other names with the same words but different author strings}
+\item{checkHomonyms}{logical, if TRUE (default) consider matches to be
+ambiguous if there are other names with the same words but different
+author strings}
 
-\item{fuzzyNameParts}{integer value of 0 (default) or greater. The maximum
-Levenshtein distance used for fuzzy matching words in \code{x}}
-
-\item{preferAccepted}{logical, if TRUE, if multiple ambiguous matches are
-found, and if there is only one candidate is an "accepted" name,
-automatically choose that name}
+\item{fuzzyNameParts}{integer value of 3 (default) or greater. The maximum
+Levenshtein distance used for server-side fuzzy matching of words in \code{x}
+with taxonomic names in the WFO database. This does not affect further
+client-side fuzzy matching of multiple ambiguous matches if
+\code{preferFuzzy = TRUE}}
 
 \item{interactive}{logical, if TRUE (default) user will be prompted to pick
 names from a list where multiple ambiguous matches are found, otherwise
 names with multiple ambiguous matches will be skipped}
+
+\item{preferAccepted}{logical, if TRUE, if multiple ambiguous matches are
+found, and if only one candidate is an "accepted" name,
+automatically choose that name}
+
+\item{preferFuzzy}{logical, if TRUE, if multiple ambiguous matches are
+found, the accepted matched name with the lowest Levenshtein distance to
+the submitted name will be returned}
 
 \item{useCache}{logical, if TRUE use cached values in
 \code{.GlobalEnv : wfo_cache} preferentially, to reduce the number of API

@@ -49,6 +49,8 @@
 #' @author John L. Godlee
 #' 
 #' @export
+#' 
+#' @importFrom stringdist stringsim
 #'
 #' @examples
 #' x <- c("Burkea africana", "Julbernardia paniculata", "Fabaceae", 

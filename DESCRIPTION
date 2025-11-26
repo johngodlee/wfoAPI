@@ -7,4 +7,4 @@ Description: Search for taxonomic names using the World Flora Online GraphQL API
 License: MIT + file LICENSE.md
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3

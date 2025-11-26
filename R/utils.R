@@ -2,7 +2,7 @@
 #'
 #' @param x Object that is potentially NULL
 #'
-#' @NoRd
+#' @noRd
 #' 
 null2na <- function(x) {
   if (is.null(x)) {
