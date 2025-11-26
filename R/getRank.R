@@ -6,7 +6,8 @@
 #' @param fill_time_s time in seconds to refill the capacity for repeated API 
 #'     calls. See documentation for `httr2::req_throttle()`
 #'
-#' @return dataframe with the higher order taxonomic ranks of the submitted WFO IDs
+#' @return list of dataframes with the higher order taxonomic ranks of each of
+#'     the submitted WFO IDs
 #' 
 #' @export
 #' 
@@ -49,10 +50,9 @@ getRank <- function(x, capacity = 60, fill_time_s = 60) {
   api_resp_list <- lapply(api_req_list, httr2::resp_body_json)
 
   # For each species 
-  out <- do.call(rbind, lapply(seq_along(api_resp_list), function(y) { 
+  out <- lapply(seq_along(api_resp_list), function(y) { 
     do.call(rbind, lapply(api_resp_list[[y]]$data$taxonConceptById$path, function(z) {
       data.frame(
-        taxon_wfo_subm = null2na(x[i]),
         taxon_wfo_acc = null2na(z$hasName$id),
         taxon_name_acc = null2na(z$hasName$fullNameStringNoAuthorsPlain),
         taxon_auth_acc = null2na(z$hasName$authorsString),
@@ -62,7 +62,8 @@ getRank <- function(x, capacity = 60, fill_time_s = 60) {
         taxon_path_acc = null2na(z$hasName$wfoPath)
       )
     }))
-  }))
+  })
+  names(out) <- x
 
   return(out)
 }

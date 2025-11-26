@@ -11,4 +11,5 @@ Features:
 * Server-side fuzzy matching of names
 * Interactive selection when multiple names are matched
 * Retrieve accepted names for synonyms 
+* Retrieve higher order taxonomic information
 * Optionally use cached data to reduce number of API calls 

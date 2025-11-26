@@ -10,16 +10,23 @@
 #' @param checkRank logical, if TRUE consider matches to be ambiguous if it is
 #'     possible to estimate taxonomic rank from the search string and the rank
 #'     does not match that in the name record
-#' @param checkHomonyms logical, if TRUE consider matches to be ambiguous if
-#'     there are other names with the same words but different author strings
-#' @param fuzzyNameParts integer value of 0 (default) or greater. The maximum
-#'     Levenshtein distance used for fuzzy matching words in `x`
-#' @param preferAccepted logical, if TRUE, if multiple ambiguous matches are
-#'     found, and if there is only one candidate is an "accepted" name,
-#'     automatically choose that name
+#' @param checkHomonyms logical, if TRUE (default) consider matches to be
+#'     ambiguous if there are other names with the same words but different
+#'     author strings
+#' @param fuzzyNameParts integer value of 3 (default) or greater. The maximum
+#'     Levenshtein distance used for server-side fuzzy matching of words in `x`
+#'     with taxonomic names in the WFO database. This does not affect further
+#'     client-side fuzzy matching of multiple ambiguous matches if 
+#'     `preferFuzzy = TRUE`
 #' @param interactive logical, if TRUE (default) user will be prompted to pick
 #'     names from a list where multiple ambiguous matches are found, otherwise
 #'     names with multiple ambiguous matches will be skipped
+#' @param preferAccepted logical, if TRUE, if multiple ambiguous matches are
+#'     found, and if only one candidate is an "accepted" name,
+#'     automatically choose that name
+#' @param preferFuzzy logical, if TRUE, if multiple ambiguous matches are 
+#'     found, the accepted matched name with the lowest Levenshtein distance to
+#'     the submitted name will be returned
 #' @param useCache logical, if TRUE use cached values in
 #'     `.GlobalEnv : wfo_cache` preferentially, to reduce the number of API
 #'     calls
@@ -52,12 +59,19 @@
 #' matchNames(x, interactive = FALSE)
 #'
 matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE, 
-  checkHomonyms = FALSE, fuzzyNameParts = 0, preferAccepted = FALSE,
-  interactive = TRUE, useCache = FALSE, useAPI = TRUE, raw = FALSE, 
-  capacity = 60, fill_time_s = 60) {
+  checkHomonyms = TRUE, fuzzyNameParts = 3, interactive = TRUE, 
+  preferAccepted = FALSE, preferFuzzy = FALSE, useCache = FALSE, 
+  useAPI = TRUE, raw = FALSE, capacity = 60, fill_time_s = 60) {
 
   if (!useCache & !useAPI) {
     stop("Either useCache or useAPI must be TRUE")
+  }
+
+  if (preferFuzzy & interactive) { 
+    warning(
+      "'preferFuzzy' and 'interactive' are both TRUE, defaulting to interactive matching", 
+      immediate. = TRUE)
+    preferFuzzy <- FALSE
   }
 
   # Define function to check URL
@@ -128,9 +142,28 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
     # Collect matched names 
     match_api_list <- list()
     for (i in seq_along(api_json_list)) {
-      # List status of candidate matches (accepted, synonym, unplaced, etc.) 
-      cand_roles <- unlist(lapply(
-          api_json_list[[i]]$data$taxonNameMatch$candidates, "[[", "role")) 
+
+      # Find Levenshtein distance between submitted name and candidate names
+      cand_dist <- 1 - stringdist::stringsim(x,
+        unlist(lapply(
+          api_json_list[[i]]$data$taxonNameMatch$candidates, 
+          "[[", "fullNameStringNoAuthorsPlain")) )
+
+      # List role of candidate matches (accepted, synonym, unplaced, etc.) 
+      role_lev <- c("accepted", "synonym", "unplaced", "deprecated")
+      cand_roles <- factor(unlist(lapply(
+          api_json_list[[i]]$data$taxonNameMatch$candidates, 
+          "[[", "role")), levels = role_lev)
+
+      # Reorder candidate matches according to Levenshtein distance and role
+      cand_names <- unlist(lapply(
+          api_json_list[[i]]$data$taxonNameMatch$candidates, 
+          "[[", "fullNameStringNoAuthorsPlain")) 
+
+      # Sort candidate matches first by Levenshtein distance, then by role
+      cand_sort <- order(cand_dist, cand_roles, cand_names)
+      api_json_list[[i]]$data$taxonNameMatch$candidates <- 
+        api_json_list[[i]]$data$taxonNameMatch$candidates[cand_sort]
 
       # If unambiguous match found
       if (!is.null(api_json_list[[i]]$data$taxonNameMatch$match)) {
@@ -143,6 +176,10 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
           match_api_list[[i]] <- api_json_list[[i]]$data$taxonNameMatch$candidates[[
             which(cand_roles == "accepted")]]
           match_api_list[[i]]$method <- "AUTO ACC"
+        } else if (preferFuzzy) {
+          # Auto-accept singular accepted name
+          match_api_list[[i]] <- api_json_list[[i]]$data$taxonNameMatch$candidates[[1]]
+          match_api_list[[i]]$method <- "AUTO FUZZY"
         } else if (interactive) {
           # Interactive name picking
           match_api_list[[i]] <- pickName(x, api_json_list[[i]]$data$taxonNameMatch$candidates)
@@ -161,6 +198,7 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
       match_api_list[[i]]$checkHomonyms <- checkHomonyms
       match_api_list[[i]]$fuzzyNameParts <- fuzzyNameParts 
       match_api_list[[i]]$preferAccepted <- preferAccepted 
+      match_api_list[[i]]$preferFuzzy <- preferFuzzy 
     }
     names(match_api_list) <- xun
 
@@ -184,20 +222,19 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
           checkHomonyms = null2na(i$checkHomonyms),
           fuzzyNameParts = null2na(i$fuzzyNameParts),
           preferAccepted = null2na(i$preferAccepted),
+          preferFuzzy = null2na(i$preferFuzzy),
           taxon_wfo_syn = null2na(i$id),
           taxon_name_syn = null2na(i$fullNameStringNoAuthorsPlain),
           taxon_auth_syn = null2na(i$authorsString),
           taxon_stat_syn = null2na(i$nomenclaturalStatus),
           taxon_role_syn = null2na(i$role),
           taxon_rank_syn = null2na(i$rank),
-          taxon_path_syn = null2na(i$wfoPath),
           taxon_wfo_acc = null2na(i$currentPreferredUsage$hasName$id),
           taxon_name_acc = null2na(i$currentPreferredUsage$hasName$fullNameStringNoAuthorsPlain),
           taxon_auth_acc = null2na(i$currentPreferredUsage$hasName$authorsString),
           taxon_stat_acc = null2na(i$currentPreferredUsage$hasName$nomenclaturalStatus),
           taxon_role_acc = null2na(i$currentPreferredUsage$hasName$role),
-          taxon_rank_acc = null2na(i$currentPreferredUsage$hasName$rank),
-          taxon_path_acc = null2na(i$currentPreferredUsage$hasName$wfoPath))
+          taxon_rank_acc = null2na(i$currentPreferredUsage$hasName$rank))
       } else { 
         data.frame(
           taxon_name_subm = i$submitted_name,
@@ -207,20 +244,19 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
           checkHomonyms = i$checkHomonyms,
           fuzzyNameParts = i$fuzzyNameParts,
           preferAccepted = i$preferAccepted,
+          preferFuzzy = i$preferFuzzy,
           taxon_wfo_syn = NA_character_,
           taxon_name_syn = NA_character_,
           taxon_auth_syn = NA_character_,
           taxon_stat_syn = NA_character_,
           taxon_role_syn = NA_character_,
           taxon_rank_syn = NA_character_,
-          taxon_path_syn = NA_character_,
           taxon_wfo_acc = NA_character_,
           taxon_name_acc = NA_character_,
           taxon_auth_acc = NA_character_,
           taxon_stat_acc = NA_character_,
           taxon_role_acc = NA_character_,
-          taxon_rank_acc = NA_character_,
-          taxon_path_acc = NA_character_)
+          taxon_rank_acc = NA_character_)
       }
     }))
 
