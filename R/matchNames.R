@@ -65,6 +65,14 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
   preferAccepted = FALSE, preferFuzzy = FALSE, useCache = FALSE, 
   useAPI = TRUE, raw = FALSE, capacity = 60, fill_time_s = 60) {
 
+  if (is.na(capacity)) { 
+    capacity <- length(x)
+  }
+
+  if (is.na(fill_time_s)) { 
+    fill_time_s <- length(x)
+  }
+
   if (!useCache & !useAPI) {
     stop("Either useCache or useAPI must be TRUE")
   }
@@ -145,34 +153,34 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
     match_api_list <- list()
     for (i in seq_along(api_json_list)) {
 
-      # Find Levenshtein distance between submitted name and candidate names
-      cand_dist <- 1 - stringdist::stringsim(x,
-        unlist(lapply(
-          api_json_list[[i]]$data$taxonNameMatch$candidates, 
-          "[[", "fullNameStringNoAuthorsPlain")) )
-
-      # List role of candidate matches (accepted, synonym, unplaced, etc.) 
-      role_lev <- c("accepted", "synonym", "unplaced", "deprecated")
-      cand_roles <- factor(unlist(lapply(
-          api_json_list[[i]]$data$taxonNameMatch$candidates, 
-          "[[", "role")), levels = role_lev)
-
-      # Reorder candidate matches according to Levenshtein distance and role
-      cand_names <- unlist(lapply(
-          api_json_list[[i]]$data$taxonNameMatch$candidates, 
-          "[[", "fullNameStringNoAuthorsPlain")) 
-
-      # Sort candidate matches first by Levenshtein distance, then by role
-      cand_sort <- order(cand_dist, cand_roles, cand_names)
-      api_json_list[[i]]$data$taxonNameMatch$candidates <- 
-        api_json_list[[i]]$data$taxonNameMatch$candidates[cand_sort]
-
       # If unambiguous match found
       if (!is.null(api_json_list[[i]]$data$taxonNameMatch$match)) {
         # Singular accepted name
         match_api_list[[i]] <- api_json_list[[i]]$data$taxonNameMatch$match
         match_api_list[[i]]$method <- "AUTO"
-      } else {
+      } else if (length(api_json_list[[i]]$data$taxonNameMatch$candidates) != 0) {
+        # Find Levenshtein distance between submitted name and candidate names
+        cand_dist <- 1 - stringdist::stringsim(xun[i],
+          unlist(lapply(
+            api_json_list[[i]]$data$taxonNameMatch$candidates, 
+            "[[", "fullNameStringNoAuthorsPlain")) )
+
+        # List role of candidate matches (accepted, synonym, unplaced, etc.) 
+        role_lev <- c("accepted", "synonym", "unplaced", "deprecated")
+        cand_roles <- factor(unlist(lapply(
+            api_json_list[[i]]$data$taxonNameMatch$candidates, 
+            "[[", "role")), levels = role_lev)
+
+        # Reorder candidate matches according to Levenshtein distance and role
+        cand_names <- unlist(lapply(
+            api_json_list[[i]]$data$taxonNameMatch$candidates, 
+            "[[", "fullNameStringNoAuthorsPlain")) 
+
+        # Sort candidate matches first by Levenshtein distance, then by role
+        cand_sort <- order(cand_dist, cand_roles, cand_names)
+        api_json_list[[i]]$data$taxonNameMatch$candidates <- 
+          api_json_list[[i]]$data$taxonNameMatch$candidates[cand_sort]
+
         if (preferAccepted && sum(cand_roles == "accepted") == 1) {
           # Auto-accept singular accepted name
           match_api_list[[i]] <- api_json_list[[i]]$data$taxonNameMatch$candidates[[
@@ -191,6 +199,11 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
           match_api_list[[i]] <- list()
           match_api_list[[i]]$method <- "EMPTY"
         }
+      } else {
+        # No successful match
+        cat(sprintf("No cached name for: %s\n", x))
+        match_api_list[[i]] <- list()
+        match_api_list[[i]]$method <- "EMPTY"
       }
 
       # Add query parameters
