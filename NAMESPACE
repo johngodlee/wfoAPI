@@ -3,7 +3,6 @@
 export(getRank)
 export(listRanks)
 export(matchNames)
-export(pickName)
 export(subPattern)
 export(wfo_cache_clear)
 export(wfo_cache_get)

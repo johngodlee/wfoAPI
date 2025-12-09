@@ -52,6 +52,37 @@
 #'
 #' @return data.frame containing taxonomic name information with rows matching
 #'     names in `x`, or a list containing unique values in `x` if raw = TRUE
+#' \describe{
+#'   \item{taxon_name_orig}{Original name as in `x`}
+#'   \item{taxon_name_subm}{Name after optional sanitisation according to `sub_pattern`, `tolower`, `nonumber`, and `nobracket`}
+#'   \item{method}{The method by which the name was matched. Either: "AUTO" if
+#'   a single non-ambiguous accepted name was matched, "AUTO ACC" if
+#'   preferAccepted = TRUE and a single accepted name was found among the
+#'   possible candidate names, "AUTO FUZZY" if preferFuzzy = TRUE and at least
+#'   one accepted name was found among the possible candidate names, "MANUAL"
+#'   if interactive = TRUE and the user picked a name, or "EMPTY" if no matches
+#'   were found.}
+#'   \item{fallbackToGenus}{Value of argument in function call}
+#'   \item{checkRank}{Value of argument in function call}
+#'   \item{checkHomonyms}{Value of argument in function call}
+#'   \item{fuzzyNameParts}{Value of argument in function call}
+#'   \item{preferAccepted}{Value of argument in function call}
+#'   \item{preferFuzzy}{Value of argument in function call}
+#'   \item{tolower}{Value of argument in function call}
+#'   \item{nonumber}{Value of argument in function call}
+#'   \item{nobracket}{Value of argument in function call}
+#'   \item{taxon_wfo_syn}{WFO ID of matched name}
+#'   \item{taxon_name_syn}{Taxonomic name of matched name}
+#'   \item{taxon_auth_syn}{Authority of matched name}
+#'   \item{taxon_stat_syn}{Taxonomy status of matched name, e.g. "conserved", "deprecated", "illegitimate", etc}
+#'   \item{taxon_role_syn}{Taxonomic role of matched name, e.g. "accepted", "synonym", "unplaced", etc}
+#'   \item{taxon_rank_syn}{Taxonomic rank of matched name, e.g. "species", "genus", "family", etc}
+#'   \item{taxon_wfo_acc}{WFO ID of accepted name}
+#'   \item{taxon_name_acc}{Taxonomic name of accepted name}
+#'   \item{taxon_auth_acc}{Authority of accepted name}
+#'   \item{taxon_stat_acc}{Taxonomy status of accepted name, e.g. "conserved", "deprecated", "illegitimate", etc}
+#'   \item{taxon_role_acc}{Taxonomic role of accepted name, e.g. "accepted", "synonym", "unplaced", etc}
+#'   \item{taxon_rank_acc}{Taxonomic rank of accepted name, e.g. "species", "genus", "family", etc}
 #'
 #' @references Borsch, T. et al. (2020).
 #' _World Flora Online: Placing taxonomists at the heart of a definitive and
@@ -249,7 +280,7 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
           match_api_list[[i]]$method <- "AUTO FUZZY"
         } else if (interactive) {
           # Interactive name picking
-          match_api_list[[i]] <- pickName(x, api_json_list[[i]]$data$taxonNameMatch$candidates)
+          match_api_list[[i]] <- pickName(xun[i], api_json_list[[i]]$data$taxonNameMatch$candidates)
         } else {
           # No successful match
           cat(sprintf("No match for: %s\n", xun[i]))

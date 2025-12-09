@@ -15,7 +15,7 @@
 #' resp <- callAPI(x, query_taxonNameMatch())
 #' pickName(x, resp$data$taxonNameMatch$candidates)
 #' 
-#' @export
+#' @noRd
 #' 
 pickName <- function(x, cand, offset = 0, page_size = 10, timeout = 10) {
 
