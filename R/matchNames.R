@@ -5,6 +5,29 @@
 #'     via their GraphQL API
 #'
 #' @param x vector of taxonomic names
+#' @param interactive logical, if TRUE (default) user will be prompted to pick
+#'     names from a list where multiple ambiguous matches are found, otherwise
+#'     names with multiple ambiguous matches will be skipped
+#' @param sub_pattern character vector of regex patterns which will be removed
+#'     from names in `x` using `gsub()`. The order of this vector matters,
+#'     substitutions are applied sequentially. Sensible defaults are provided
+#'     by `subPattern()`
+#' @param tolower logical, if TRUE names are converted to all lower case
+#'     characters 
+#' @param nonumber logical, if TRUE names containing numbers will be
+#'     interpreted as genera, only matching the first word
+#' @param nobracket logical If TRUE characters occurring after "(" or ")" will
+#'     be removed. Note this could also remove authorities.
+#' @param preferAccepted logical, if TRUE, if multiple ambiguous matches are
+#'     found, and if only one candidate is an "accepted" name,
+#'     automatically choose that name
+#' @param preferFuzzy logical, if TRUE, if multiple ambiguous matches are 
+#'     found, the accepted matched name with the lowest Levenshtein distance to
+#'     the submitted name will be returned
+#' @param useCache logical, if TRUE use cached values in
+#'     `wfo_cache_get()` preferentially, to reduce the number of API
+#'     calls
+#' @param useAPI logical, if TRUE (default) allow API calls
 #' @param fallbackToGenus logical, if TRUE genus-level matches will be returned
 #'     if no species-level match is available
 #' @param checkRank logical, if TRUE consider matches to be ambiguous if it is
@@ -18,25 +41,14 @@
 #'     with taxonomic names in the WFO database. This does not affect further
 #'     client-side fuzzy matching of multiple ambiguous matches if 
 #'     `preferFuzzy = TRUE`
-#' @param interactive logical, if TRUE (default) user will be prompted to pick
-#'     names from a list where multiple ambiguous matches are found, otherwise
-#'     names with multiple ambiguous matches will be skipped
-#' @param preferAccepted logical, if TRUE, if multiple ambiguous matches are
-#'     found, and if only one candidate is an "accepted" name,
-#'     automatically choose that name
-#' @param preferFuzzy logical, if TRUE, if multiple ambiguous matches are 
-#'     found, the accepted matched name with the lowest Levenshtein distance to
-#'     the submitted name will be returned
-#' @param useCache logical, if TRUE use cached values in
-#'     `.GlobalEnv : wfo_cache` preferentially, to reduce the number of API
-#'     calls
-#' @param useAPI logical, if TRUE (default) allow API calls
 #' @param raw logical, if TRUE raw a nested list is returned, otherwise a
 #'     dataframe
 #' @param capacity maximum number of API calls which can accumulate over the 
 #'     duration of `fill_time_s`. See documentation for `httr2::req_throttle()`
 #' @param fill_time_s time in seconds to refill the capacity for repeated API 
 #'     calls. See documentation for `httr2::req_throttle()`
+#' @param timeout time in seconds to wait before disconnecting from an
+#'     unresponsive request
 #'
 #' @return data.frame containing taxonomic name information with rows matching
 #'     names in `x`, or a list containing unique values in `x` if raw = TRUE
@@ -60,11 +72,13 @@
 #' matchNames(x, fallbackToGenus = TRUE)
 #' matchNames(x, interactive = FALSE)
 #'
-matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE, 
-  checkHomonyms = TRUE, fuzzyNameParts = 3, interactive = TRUE, 
-  preferAccepted = FALSE, preferFuzzy = FALSE, useCache = FALSE, 
-  useAPI = TRUE, raw = FALSE, capacity = 60, fill_time_s = 60) {
+matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(), 
+  tolower = FALSE, nonumber = FALSE, nobracket = FALSE, 
+  preferAccepted = FALSE, preferFuzzy = FALSE, useCache = FALSE, useAPI = TRUE, 
+  fallbackToGenus = FALSE, checkRank = FALSE, checkHomonyms = TRUE, fuzzyNameParts = 3, 
+  raw = FALSE, capacity = 60, fill_time_s = 60, timeout = 10) {
 
+  # If API throttling arguments are empty, set to generous values 
   if (is.na(capacity)) { 
     capacity <- length(x)
   }
@@ -100,7 +114,7 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
   }
 
   # Check if WFO API is reachable 
-  if (!checkURL(getOption("wfo.api_uri"))) {
+  if (useAPI && !checkURL(getOption("wfo.api_uri"))) {
     w <- paste("WFO API unreachable:", getOption("wfo.api_uri"))
     if (useCache) {
       warning(w, "\nOnly cached names will be filled")
@@ -110,26 +124,69 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
     }
   }
 
+  # Create duplicate names to prepare for sanitising
+  xsub <- x
+
+  # Optionally convert characters to lowercase
+  if (tolower) {
+    xsub <- tolower(xsub)
+  }
+
+  # Optionally remove substrings matched by sub_pattern
+  sub_pattern <- na.omit(sub_pattern)
+  if (length(sub_pattern) > 0) {
+    for (i in seq_along(sub_pattern)) {
+      xsub <- gsub(sub_pattern[i], "", xsub)
+    }
+  } 
+
+  # Optionally converts names with a number to genera (first word only)
+  if (nonumber) { 
+    has_num <- grepl("[0-9]", xsub)
+    xsub[has_num] <- gsub("\\s.*", "", xsub[has_num])
+  }
+
+  # Optionally remove characters after parentheses
+  if (nobracket) {
+    xsub <- gsub("\\(.*|\\).*", "", xsub)
+  }
+
+  # Remove leading and trailing whitespace and multiple spaces
+  xsub <- trimws(gsub("\\s+", " ", xsub))
+
   # Extract unique names 
-  xun <- sort(unique(x))
+  xun <- sort(unique(xsub))
   xlen <- length(xun)
 
   # Optionally search cache for names
   match_cache_list <- list()
   if (useCache) {
     # Extract cached names
-    match_cache_list <- the$wfo_cache[xun]
+    match_cache_list <- wfo_cache_get()[xun]
+    match_cache_list[sapply(match_cache_list, is.null)] <- NULL
 
     # Remove names matched in cache from vector of names
     xun <- xun[!xun %in% names(match_cache_list)]
     xlen <- length(xun)
 
     # Message
-    cat(sprintf("Using cached data for %s species\n", length(match_cache_list)))
+    if (length(match_cache_list) > 0) {
+      cat(sprintf("Using cached data for %s species\n", length(match_cache_list)), "\n")
+    }
+  }
+
+  # Send message if names not matched in cache and API is off 
+  if (!useAPI & length(xun) > 0) {
+  cat(sprintf(
+      "Some names not found in cache and useAPI = FALSE. These names will be NA:\n  %s",
+      paste(xun, collapse = "\n  ")
+    ),
+      "\n")
   }
 
   # For each taxonomic name (optionally excluding names matched in cache)
   # Construct API calls
+  match_api_list <- list()
   if (useAPI) {
     api_call_list <- list()
     for (i in seq_along(xun)) {
@@ -140,7 +197,8 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
           checkHomonyms = checkHomonyms,
           fuzzyNameParts = fuzzyNameParts,
           capacity = capacity,
-          fill_time_s = fill_time_s)
+          fill_time_s = fill_time_s,
+          timeout = timeout)
     }
 
     # Submit API calls
@@ -150,7 +208,6 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
     api_json_list <- lapply(api_resp_list, httr2::resp_body_json)
 
     # Collect matched names 
-    match_api_list <- list()
     for (i in seq_along(api_json_list)) {
 
       # If unambiguous match found
@@ -195,13 +252,13 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
           match_api_list[[i]] <- pickName(x, api_json_list[[i]]$data$taxonNameMatch$candidates)
         } else {
           # No successful match
-          cat(sprintf("No cached name for: %s\n", x))
+          cat(sprintf("No match for: %s\n", xun[i]))
           match_api_list[[i]] <- list()
           match_api_list[[i]]$method <- "EMPTY"
         }
       } else {
-        # No successful match
-        cat(sprintf("No cached name for: %s\n", x))
+        # No candidates 
+        cat(sprintf("No candidates for: %s\n", xun[i]))
         match_api_list[[i]] <- list()
         match_api_list[[i]]$method <- "EMPTY"
       }
@@ -214,6 +271,9 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
       match_api_list[[i]]$fuzzyNameParts <- fuzzyNameParts 
       match_api_list[[i]]$preferAccepted <- preferAccepted 
       match_api_list[[i]]$preferFuzzy <- preferFuzzy 
+      match_api_list[[i]]$tolower <- tolower 
+      match_api_list[[i]]$nonumber <- nonumber 
+      match_api_list[[i]]$nobracket <- nobracket 
     }
     names(match_api_list) <- xun
 
@@ -227,7 +287,7 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
     out <- match_list
   } else {
     # Create formatted dataframe
-    out <- do.call(rbind, lapply(match_list, function(i) { 
+    match_df <- do.call(rbind, lapply(match_list, function(i) { 
       if ("id" %in% names(i)) {
         data.frame(
           taxon_name_subm = null2na(i$submitted_name),
@@ -238,6 +298,9 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
           fuzzyNameParts = null2na(i$fuzzyNameParts),
           preferAccepted = null2na(i$preferAccepted),
           preferFuzzy = null2na(i$preferFuzzy),
+          tolower = null2na(i$tolower),
+          nonumber = null2na(i$nonumber),
+          nobracket = null2na(i$nobracket),
           taxon_wfo_syn = null2na(i$id),
           taxon_name_syn = null2na(i$fullNameStringNoAuthorsPlain),
           taxon_auth_syn = null2na(i$authorsString),
@@ -260,6 +323,9 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
           fuzzyNameParts = i$fuzzyNameParts,
           preferAccepted = i$preferAccepted,
           preferFuzzy = i$preferFuzzy,
+          tolower = i$tolower,
+          nonumber = i$nonumber,
+          nobracket = i$nobracket,
           taxon_wfo_syn = NA_character_,
           taxon_name_syn = NA_character_,
           taxon_auth_syn = NA_character_,
@@ -276,14 +342,16 @@ matchNames <- function(x, fallbackToGenus = FALSE, checkRank = FALSE,
     }))
 
     # Match row order of dataframe to x
-    out <- out[match(x, out$taxon_name_subm),]
+    out <- cbind(taxon_name_orig = x, match_df[match(xsub, match_df$taxon_name_subm),])
+    rownames(out) <- NULL
   }
 
   # Store good API results in cache
-  match_api_good_list <- match_api_list[
-    unlist(lapply(match_api_list, "[[", "method")) %in% c("AUTO", "MANUAL") &
-    !names(match_api_list) %in% names(the$wfo_cache)]
-  the$wfo_cache <- c(the$wfo_cache, match_api_good_list)
+  # Non-ambiguous automatic matches and manual assertions only
+  match_good_list <- match_list[
+    unlist(lapply(match_list, "[[", "method")) %in% c("AUTO", "MANUAL") &
+    !names(match_list) %in% names(wfo_cache_get())]
+  the$wfo_cache <- c(wfo_cache_get(), match_good_list)
 
   # Return
   return(out)

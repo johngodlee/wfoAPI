@@ -3,7 +3,8 @@
 #' @export
 #' 
 wfo_cache_clear <- function() { 
-  the$wfo_cache <- new.env(parent = emptyenv())
+  rm(wfo_cache, envir = the)
+  the$wfo_cache <- list()
 }
 
 #' Return a loaded WFO cache
@@ -21,7 +22,7 @@ wfo_cache_get <- function() {
 #' @export
 #' 
 wfo_cache_save <- function(file = "./wfo_cache.rds") {
-  saveRDS(the$wfo_cache, file)
+  saveRDS(wfo_cache_get(), file)
   message(sprintf("WFO cache saved to '%s'", file))
 }
 
@@ -46,13 +47,13 @@ wfo_cache_status <- function() {
     "\n--- WFO name cache status ---\n",
     sprintf("Cache contains %s name strings.\n", format(n, big.mark=",")),
     "Return the cache object:\n",
-    "\twfo_cache_get()\n",
+    "  wfo_cache_get()\n",
     "Save the cache for future sessions:\n",
-    "\twfo_cache_save('./wfo_cache.rds')\n",
+    "  wfo_cache_save('./wfo_cache.rds')\n",
     "Load an existing cache:\n",
-    "\twfo_cache_load('./wfo_cache.rds')\n",
+    "  wfo_cache_load('./wfo_cache.rds')\n",
     "Clear the current cache:\n",
-    "\twfo_cache_clear()\n"
+    "  wfo_cache_clear()\n"
   )
 }
 

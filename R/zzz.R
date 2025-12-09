@@ -10,7 +10,6 @@
 }
 
 .onAttach <- function(libname, pkgname) {
-  
   # Send startup messages
   packageStartupMessage(
     "WFO API URI set: ", getOption("wfo.api_uri")

@@ -4,15 +4,24 @@
 \alias{getRank}
 \title{Get higher order taxonomic information for WFO IDs}
 \usage{
-getRank(x, capacity = 60, fill_time_s = 60)
+getRank(x, rank = NULL, capacity = 60, fill_time_s = 60, timeout = 10)
 }
 \arguments{
-\item{x}{vector of WFO IDs, e.g. "wfo-0000214110"}
+\item{x}{vector of WFO IDs, e.g. "wfo-0000214110". Note IDs must be of
+accepted names. Non-accepted names will not return any higher order
+taxonomic information.}
+
+\item{rank}{optional character vector of desired ranks. If NULL (default),
+all higher order taxonomic information is returned. Return all available
+ranks with \code{listRanks()}}
 
 \item{capacity}{maximum number of API calls which can accumulate over the
 duration of \code{fill_time_s}. See documentation for \code{httr2::req_throttle()}
  @param fill_time_s time in seconds to refill the capacity for repeated API
 calls. See documentation for \code{httr2::req_throttle()}}
+
+\item{timeout}{time in seconds to wait before disconnecting from an
+unresponsive request}
 }
 \value{
 list of dataframes with the higher order taxonomic ranks of each of

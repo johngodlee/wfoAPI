@@ -5,6 +5,8 @@
 #' @param offset initial index value used internally by pager, controls index
 #'     of page start
 #' @param page_size index value used internally by pager, controls page length
+#' @param timeout time in seconds to wait before disconnecting from an
+#'     unresponsive request
 #'
 #' @return list containing information of matched taxonomic name
 #' 
@@ -15,7 +17,7 @@
 #' 
 #' @export
 #' 
-pickName <- function(x, cand, offset = 0, page_size = 10) {
+pickName <- function(x, cand, offset = 0, page_size = 10, timeout = 10) {
 
   # If no candidates, SKIP
   if (length(cand) == 0) {
@@ -73,7 +75,7 @@ pickName <- function(x, cand, offset = 0, page_size = 10) {
     } else if (grepl("^wfo-[0-9]{10}$", tolower(trimws(input)))) {
       input <- tolower(trimws(input))
       api_call <- callAPI(input, 
-        query_taxonNameById())
+        query_taxonNameById(), timeout = timeout)
       api_resp <- httr2::req_perform(api_call)
       api_json <- httr2::resp_body_json(api_resp)
       match <- api_json$data$taxonNameById

@@ -6,22 +6,59 @@
 \usage{
 matchNames(
   x,
-  fallbackToGenus = FALSE,
-  checkRank = FALSE,
-  checkHomonyms = TRUE,
-  fuzzyNameParts = 3,
   interactive = TRUE,
+  sub_pattern = subPattern(),
+  tolower = FALSE,
+  nonumber = FALSE,
+  nobracket = FALSE,
   preferAccepted = FALSE,
   preferFuzzy = FALSE,
   useCache = FALSE,
   useAPI = TRUE,
+  fallbackToGenus = FALSE,
+  checkRank = FALSE,
+  checkHomonyms = TRUE,
+  fuzzyNameParts = 3,
   raw = FALSE,
   capacity = 60,
-  fill_time_s = 60
+  fill_time_s = 60,
+  timeout = 10
 )
 }
 \arguments{
 \item{x}{vector of taxonomic names}
+
+\item{interactive}{logical, if TRUE (default) user will be prompted to pick
+names from a list where multiple ambiguous matches are found, otherwise
+names with multiple ambiguous matches will be skipped}
+
+\item{sub_pattern}{character vector of regex patterns which will be removed
+from names in \code{x} using \code{gsub()}. The order of this vector matters,
+substitutions are applied sequentially. Sensible defaults are provided
+by \code{subPattern()}}
+
+\item{tolower}{logical, if TRUE names are converted to all lower case
+characters}
+
+\item{nonumber}{logical, if TRUE names containing numbers will be
+interpreted as genera, only matching the first word}
+
+\item{nobracket}{logical If TRUE characters occurring after "(" or ")" will
+be removed. Note this could also remove authorities.}
+
+\item{preferAccepted}{logical, if TRUE, if multiple ambiguous matches are
+found, and if only one candidate is an "accepted" name,
+automatically choose that name}
+
+\item{preferFuzzy}{logical, if TRUE, if multiple ambiguous matches are
+found, the accepted matched name with the lowest Levenshtein distance to
+the submitted name will be returned}
+
+\item{useCache}{logical, if TRUE use cached values in
+\code{wfo_cache_get()} preferentially, to reduce the number of API
+calls}
+
+\item{useAPI}{logical, if TRUE (default) allow API calls}
 
 \item{fallbackToGenus}{logical, if TRUE genus-level matches will be returned
 if no species-level match is available}
@@ -40,24 +77,6 @@ with taxonomic names in the WFO database. This does not affect further
 client-side fuzzy matching of multiple ambiguous matches if
 \code{preferFuzzy = TRUE}}
 
-\item{interactive}{logical, if TRUE (default) user will be prompted to pick
-names from a list where multiple ambiguous matches are found, otherwise
-names with multiple ambiguous matches will be skipped}
-
-\item{preferAccepted}{logical, if TRUE, if multiple ambiguous matches are
-found, and if only one candidate is an "accepted" name,
-automatically choose that name}
-
-\item{preferFuzzy}{logical, if TRUE, if multiple ambiguous matches are
-found, the accepted matched name with the lowest Levenshtein distance to
-the submitted name will be returned}
-
-\item{useCache}{logical, if TRUE use cached values in
-\code{.GlobalEnv : wfo_cache} preferentially, to reduce the number of API
-calls}
-
-\item{useAPI}{logical, if TRUE (default) allow API calls}
-
 \item{raw}{logical, if TRUE raw a nested list is returned, otherwise a
 dataframe}
 
@@ -65,6 +84,9 @@ dataframe}
 duration of \code{fill_time_s}. See documentation for \code{httr2::req_throttle()}
  @param fill_time_s time in seconds to refill the capacity for repeated API
 calls. See documentation for \code{httr2::req_throttle()}}
+
+\item{timeout}{time in seconds to wait before disconnecting from an
+unresponsive request}
 }
 \value{
 data.frame containing taxonomic name information with rows matching

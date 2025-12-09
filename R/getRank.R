@@ -1,23 +1,30 @@
 #' Get higher order taxonomic information for WFO IDs
 #'
-#' @param x vector of WFO IDs, e.g. "wfo-0000214110"
+#' @param x vector of WFO IDs, e.g. "wfo-0000214110". Note IDs must be of
+#'     accepted names. Non-accepted names will not return any higher order
+#'     taxonomic information.
+#' @param rank optional character vector of desired ranks. If NULL (default),
+#'     all higher order taxonomic information is returned. Return all available
+#'     ranks with `listRanks()`
 #' @param capacity maximum number of API calls which can accumulate over the 
 #'     duration of `fill_time_s`. See documentation for `httr2::req_throttle()`
 #' @param fill_time_s time in seconds to refill the capacity for repeated API 
 #'     calls. See documentation for `httr2::req_throttle()`
+#' @param timeout time in seconds to wait before disconnecting from an
+#'     unresponsive request
 #'
 #' @return list of dataframes with the higher order taxonomic ranks of each of
 #'     the submitted WFO IDs
 #' 
 #' @export
 #' 
-getRank <- function(x, capacity = 60, fill_time_s = 60) {
+getRank <- function(x, rank = NULL, capacity = 60, fill_time_s = 60, timeout = 10) {
 
   # Create request 
   req <- httr2::request(getOption("wfo.api_uri"))
 
   # Get the most recent taxonomic backbone classification
-  query <- "
+  q <- "
     query {
       classifications(classificationId: \"DEFAULT\") {
         id
@@ -25,7 +32,7 @@ getRank <- function(x, capacity = 60, fill_time_s = 60) {
     }
   "
 
-  classif_payload <- list(query = query)
+  classif_payload <- list(query = q)
   classif_req <- httr2::req_body_json(req, classif_payload, auto_unbox = TRUE)
   classif_resp <- httr2::req_perform(classif_req)
   classif_json <- httr2::resp_body_json(classif_resp)
@@ -40,7 +47,8 @@ getRank <- function(x, capacity = 60, fill_time_s = 60) {
     api_call_list[[i]] <- callAPI(xc[i], 
       query = query_taxonConceptById(),
       capacity = capacity,
-      fill_time_s = fill_time_s)
+      fill_time_s = fill_time_s,
+      timeout = timeout)
   }
 
   # Submit API calls
@@ -65,6 +73,39 @@ getRank <- function(x, capacity = 60, fill_time_s = 60) {
   })
   names(out) <- x
 
+  # Optionally filter to named ranks
+  if (!is.null(rank)) { 
+    out <- lapply(out, function(y) {
+      y[y$taxon_rank_acc %in% rank,]
+    })
+  }
+
+  # Return
+  return(out)
+}
+
+#' Return all valid ranks in the World Flora Online database
+#'
+#' @return character vector, e.g. for use in `getRank(rank = )`
+#' 
+#' @export
+#' 
+listRanks <- function() {
+  # Construct query
+  q <- "
+    query ranks {
+      ranks {
+        id
+      }
+    }
+  "
+
+  # Run query
+  req <- callAPI("", query = q)
+  req <- httr2::req_perform(req)
+  out <- unname(unlist(httr2::resp_body_json(req)))
+
+  # Return
   return(out)
 }
 

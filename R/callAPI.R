@@ -17,6 +17,8 @@
 #'     duration of `fill_time_s`. See documentation for `httr2::req_throttle()`
 #' @param fill_time_s time in seconds to refill the capacity for repeated API 
 #'     calls. See documentation for `httr2::req_throttle()`
+#' @param timeout time in seconds to wait before disconnecting from an
+#'     unresponsive request
 #'
 #' @return object containing API call
 #' 
@@ -26,7 +28,7 @@
 #' callAPI("wfo-0000214110", query_taxonNameById())
 #'
 callAPI <- function(x, query, fallbackToGenus = FALSE, checkRank = FALSE, 
-  checkHomonyms = FALSE, fuzzyNameParts = 3, capacity = 60, fill_time_s = 60) {
+  checkHomonyms = FALSE, fuzzyNameParts = 3, capacity = 60, fill_time_s = 60, timeout = 10) {
 
   # Create request 
   req <- httr2::request(getOption("wfo.api_uri"))
@@ -43,6 +45,9 @@ callAPI <- function(x, query, fallbackToGenus = FALSE, checkRank = FALSE,
 
   # Set body
   req <- httr2::req_body_json(req, payload, auto_unbox = TRUE)
+  
+  # Set timeout
+  req <- httr2::req_options(req, timeout = timeout)
 
   # Set throttle to avoid rate-limiting 
   req <- httr2::req_throttle(req, 
