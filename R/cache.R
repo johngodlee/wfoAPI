@@ -42,10 +42,13 @@ wfo_cache_load <- function(file = "./wfo_cache.rds") {
 #' @export
 #' 
 wfo_cache_status <- function() {
-  n <- length(the$wfo_cache)
+  n_matchNames <- length(the$wfo_cache$matchNames)
+  n_getRank <- length(the$wfo_cache$getRank)
   message(
     "\n--- WFO name cache status ---\n",
-    sprintf("Cache contains %s name strings.\n", format(n, big.mark=",")),
+    "Cache contains:\n",
+    sprintf("  %s matched names\n", format(n_matchNames, big.mark=",")),
+    sprintf("  %s taxon hierarchies\n", format(n_getRank, big.mark=",")),
     "Return the cache object:\n",
     "  wfo_cache_get()\n",
     "Save the cache for future sessions:\n",

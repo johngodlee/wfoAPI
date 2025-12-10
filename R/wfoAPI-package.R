@@ -11,4 +11,6 @@ NULL
 
 the <- new.env(parent = emptyenv()) 
 the$wfo_cache <- list()
+the$wfo_cache$matchNames <- list()
+the$wfo_cache$getRank <- list()
 

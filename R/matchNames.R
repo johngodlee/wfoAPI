@@ -76,15 +76,18 @@
 #'   \item{taxon_name_syn}{Taxonomic name of matched name}
 #'   \item{taxon_auth_syn}{Authority of matched name}
 #'   \item{taxon_stat_syn}{Taxonomy status of matched name, e.g. "conserved",
-#'   "deprecated", "illegitimate", etc} \item{taxon_role_syn}{Taxonomic role of
-#'   matched name, e.g. "accepted", "synonym", "unplaced", etc}
+#'   "deprecated", "illegitimate", etc} 
+#'   \item{taxon_role_syn}{Taxonomic role of matched name, e.g. "accepted",
+#'   "synonym", "unplaced", etc}
 #'   \item{taxon_rank_syn}{Taxonomic rank of matched name, e.g. "species",
-#'   "genus", "family", etc} \item{taxon_wfo_acc}{WFO ID of accepted name}
+#'   "genus", "family", etc} 
+#'   \item{taxon_wfo_acc}{WFO ID of accepted name}
 #'   \item{taxon_name_acc}{Taxonomic name of accepted name}
 #'   \item{taxon_auth_acc}{Authority of accepted name}
 #'   \item{taxon_stat_acc}{Taxonomy status of accepted name, e.g. "conserved",
-#'   "deprecated", "illegitimate", etc} \item{taxon_role_acc}{Taxonomic role of
-#'   accepted name, e.g. "accepted", "synonym", "unplaced", etc}
+#'   "deprecated", "illegitimate", etc} 
+#'   \item{taxon_role_acc}{Taxonomic role of accepted name, e.g. "accepted",
+#'   "synonym", "unplaced", etc}
 #'   \item{taxon_rank_acc}{Taxonomic rank of accepted name, e.g. "species",
 #'   "genus", "family", etc}
 #' }
@@ -134,21 +137,6 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
     preferFuzzy <- FALSE
   }
 
-  # Define function to check URL
-  checkURL <- function(url) {
-    tryCatch(
-      {
-        req <- httr2::request(url)
-        req <- httr2::req_method(req, "HEAD")
-        httr2::req_perform(req)
-        TRUE
-      },
-      error = function(e) {
-        FALSE
-      }
-    )
-  }
-
   # Check if WFO API is reachable 
   if (useAPI && !checkURL(getOption("wfo.api_uri"))) {
     w <- paste("WFO API unreachable:", getOption("wfo.api_uri"))
@@ -192,22 +180,20 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
 
   # Extract unique names 
   xun <- sort(unique(xsub))
-  xlen <- length(xun)
 
   # Optionally search cache for names
   match_cache_list <- list()
   if (useCache) {
     # Extract cached names
-    match_cache_list <- wfo_cache_get()[xun]
+    match_cache_list <- wfo_cache_get()$matchNames[xun]
     match_cache_list[sapply(match_cache_list, is.null)] <- NULL
 
     # Remove names matched in cache from vector of names
     xun <- xun[!xun %in% names(match_cache_list)]
-    xlen <- length(xun)
 
     # Message
     if (length(match_cache_list) > 0) {
-      cat(sprintf("Using cached data for %s species\n", length(match_cache_list)), "\n")
+      cat(sprintf("Using cached data for %s names\n", length(match_cache_list)), "\n")
     }
   }
 
@@ -223,7 +209,7 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
   # For each taxonomic name (optionally excluding names matched in cache)
   # Construct API calls
   match_api_list <- list()
-  if (useAPI) {
+  if (useAPI & length(xun) > 0) {
     api_call_list <- list()
     for (i in seq_along(xun)) {
       api_call_list[[i]] <- callAPI(xun[i], 
@@ -319,8 +305,17 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
   match_list <- c(match_cache_list, match_api_list)
 
   if (raw) {
-    # Return raw list output
-    out <- match_list
+
+    # Add missing matches
+    match_miss <- xsub[!xsub %in% names(match_list)]
+    if (length(match_miss) > 0) {
+      match_list <- c(match_list, 
+        setNames(vector("list", length(match_miss)), match_miss))
+    }
+
+    # Match row order of list to x
+    out <- match_list[match(xsub, names(match_list))]
+
   } else {
     # Create formatted dataframe
     match_df <- do.call(rbind, lapply(match_list, function(i) { 
@@ -386,8 +381,8 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
   # Non-ambiguous automatic matches and manual assertions only
   match_good_list <- match_list[
     unlist(lapply(match_list, "[[", "method")) %in% c("AUTO", "MANUAL") &
-    !names(match_list) %in% names(wfo_cache_get())]
-  the$wfo_cache <- c(wfo_cache_get(), match_good_list)
+    !names(match_list) %in% names(wfo_cache_get()$matchNames)]
+  the$wfo_cache$matchNames <- c(wfo_cache_get()$matchNames, match_good_list)
 
   # Return
   return(out)

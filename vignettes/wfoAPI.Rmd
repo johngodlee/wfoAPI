@@ -1,0 +1,212 @@
+---
+title: "wfoAPI"
+output: rmarkdown::html_vignette
+author: "John L. Godlee (johngodlee@gmail.com)"
+vignette: >
+  %\VignetteIndexEntry{wfoAPI}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction
+
+The `wfoAPI` package provides a simple interface to the World Flora Online (WFO) GraphQL API ([https://list.worldfloraonline.org/gql.php]) for matching and standardizing plant taxonomic names. Unlike the [WorldFlora package](https://cran.r-project.org/web/packages/WorldFlora/index.html), which requires downloading a static copy of the entire WFO database, `wfoAPI` queries the API directly, ensuring you always have access to the most current taxonomic information.
+
+### Key features
+
+- **Real-time data access**: Query the latest WFO taxonomic backbone without downloading large datasets
+- **Server-side fuzzy matching**: Leverage WFO's name matching algorithms
+- **Interactive selection**: Choose from multiple ambiguous matches 
+- **Synonym resolution**: Automatically retrieve accepted names for synonyms
+- **Taxonomic hierarchy**: Access higher-order taxonomic information (family, order, etc.)
+- **Caching support**: Reduce API calls by caching results
+
+## Installation
+
+You can install the development version of `wfoAPI` from GitHub:
+
+```{r install, eval = FALSE}
+# install.packages("remotes")
+remotes::install_github("johngodlee/wfoAPI")
+```
+
+## Basic usage
+
+The primary function in the package is `matchNames()`, which takes a vector of taxonomic names and returns matched names from the WFO database.
+
+```{r}
+library(wfoAPI)
+
+# Match a single species name
+t(matchNames("Burkea africana"))
+```
+
+The function returns a data frame with the following information:
+
+* `taxon_name_orig` - Original name as in `x`
+* `taxon_name_subm` - Name after optional sanitisation according to `sub_pattern`, `tolower`, `nonumber`, and `nobracket`
+* `method` - The method by which the name was matched. Either: "AUTO" if a single non-ambiguous accepted name was matched, "AUTO ACC" if preferAccepted = TRUE and a single accepted name was found among the possible candidate names, "AUTO FUZZY" if preferFuzzy = TRUE and at least one accepted name was found among the possible candidate names, "MANUAL" if interactive = TRUE and the user picked a name, or "EMPTY" if no matches were found
+* `fallbackToGenus` - Value of argument in function call
+* `checkRank` - Value of argument in function call
+* `checkHomonyms` - Value of argument in function call
+* `fuzzyNameParts` - Value of argument in function call
+* `preferAccepted` - Value of argument in function call
+* `preferFuzzy` - Value of argument in function call
+* `tolower` - Value of argument in function call
+* `nonumber` - Value of argument in function call
+* `nobracket` - Value of argument in function call
+* `taxon_wfo_syn` - WFO ID of matched name
+* `taxon_name_syn` - Taxonomic name of matched name
+* `taxon_auth_syn` - Authority of matched name
+* `taxon_stat_syn` - Taxonomy status of matched name, e.g. "conserved", "deprecated", "illegitimate", etc 
+* `taxon_role_syn` - Taxonomic role of matched name, e.g. "accepted", "synonym", "unplaced", etc
+* `taxon_rank_syn` - Taxonomic rank of matched name, e.g. "species", "genus", "family", etc 
+* `taxon_wfo_acc` - WFO ID of accepted name
+* `taxon_name_acc` - Taxonomic name of accepted name
+* `taxon_auth_acc` - Authority of accepted name
+* `taxon_stat_acc` - Taxonomy status of accepted name, e.g. "conserved", "deprecated", "illegitimate", etc 
+* `taxon_role_acc` - Taxonomic role of accepted name, e.g. "accepted", "synonym", "unplaced", etc
+* `taxon_rank_acc` - Taxonomic rank of accepted name, e.g. "species", "genus", "family", etc
+
+`matchNames()` can process multiple names efficiently:
+
+```{r}
+# Vector of plant names
+x <- c(
+  "Burkea africana",
+  "Julbernardia paniculata",
+  "Fagus sylvatica",
+  "Betula pendula"
+)
+
+# Match all names
+matchNames(x)
+```
+
+Return raw list output with `raw = TRUE`:
+
+```{r}
+matchNames("Burkea africana", raw = TRUE)
+```
+
+When a submitted name is a synonym, the function automatically retrieves the currently accepted name:
+
+```{r}
+t(matchNames("Lonchocarpus nelsii"))
+```
+
+## Selection algorithms
+
+The WFO API performs server-side fuzzy matching to handle spelling variations and errors. Where a name is not uniquely matched a list of fuzzy-matched candidates is returned. The arguments provided to `matchNames()` alter how these candidate names are handled.
+
+If `interactive = TRUE`, you can manually select the correct candidate:
+
+```{r eval=FALSE}
+# NOT RUN
+matchNames("Ochna pul", interactive = TRUE)
+```
+
+If `preferAccepted = TRUE`, if only one candidate is an "accepted" name, this name is automatically selected.
+
+```{r}
+t(matchNames("Strychnos pungens", interactive = TRUE, preferAccepted = TRUE))
+```
+
+If `interactive = FALSE` and `preferFuzzy = TRUE`, the accepted name with the lowest Levenshtein distance from the submitted name from the list of fuzzily-matched candidates:
+
+```{r}
+t(matchNames("Brachystegia spic", interactive = FALSE, preferFuzzy = TRUE))
+```
+
+## Sanitising names
+
+Other arguments to `matchNames()` control how names are pre-processed before being sent to the WFO API. 
+
+`sub_pattern` contains a vector of regex patterns which will be sequentially removed from the values in `x`. `subPattern()` returns an example with commonly used patterns:
+
+```{r}
+t(matchNames("Burkea### africana", sub_pattern = "#+"))
+```
+
+`tolower = TRUE` converts names to lower case:
+
+```{r}
+t(matchNames("bUrKEA AfriCANA", tolower = TRUE))
+```
+
+If `nonumber = TRUE`, names with numbers will be shortened just to the first word, e.g. the genus:
+
+```{r}
+t(matchNames("Burkea africana 1", nonumber = TRUE))
+```
+
+If `nobracket = TRUE`, characters after parentheses (brackets, "(" or ")") will be removed. Be warned, this can also erroneously remove authorities:
+
+```{r}
+t(matchNames("Burkea africana (looks like it)", nobracket = TRUE))
+```
+
+## Extracting higher order taxonomy information
+
+The function `getRank()` allows you to retrieve information information on higher taxonomic ranks using the WFO IDs of any accepted names.
+
+```{r}
+res <- matchNames("Burkea africana")
+
+getRank(res$taxon_wfo_acc)
+```
+
+You can also specify ranks to extract:
+
+```{r}
+getRank(res$taxon_wfo_acc, rank = c("genus", "phylum"))
+```
+
+## Caching results
+
+To reduce API calls and improve performance when working with the same names repeatedly `wfoAPI` uses a cache system. The following functions allow you to work with the cache:
+
+* `wfo_cache_get()` - access the contents of the cache. 
+* `wfo_cache_save()` - save the cache to a `.rds` file.
+* `wfo_cache_load()` - load the cache from a previously saved file.
+* `wfo_cache_clear()` - purge the currently loaded cache.
+* `wfo_cache_status()` - quickly see the status of the cache.
+
+Only names matched by method "AUTO" and "MANUAL" will be saved to the cache.
+
+```{r}
+wfo_cache_clear()
+
+wfo_cache_get()
+```
+
+```{r}
+res <- matchNames("Burkea africana")
+
+names(wfo_cache_get()$matchNames)
+```
+
+```{r}
+wfo_cache_clear()
+
+names(wfo_cache_get()$matchNames)
+```
+
+`wfo_cache_get()` points to `the$wfo_cache`. The cache contains two lists, one for the results of `matchNames()` (`the$wfo_cache$matchNames`) and one for the results of `getRank()` (`the$wfo_cache$getRank`).
+
+To use cached names, set argument `useCache = TRUE` in `matchNames()`. Similarly, you can disable API access and only use the cache, by setting argument `useAPI = FALSE`.
+
+## Managing API load
+
+`matchNames()` and `getRank()` both have arguments to limit the rate of API calls, to avoid overloading the API.
+
+Arguments `capacity` and `fill_time_s` are passed to `httr2::req_throttle()`. See the help files for these functions for more details. In short, rate limiting is managed with a bucket system. Each name submitted represents one token. `capacity` sets how many tokens the bucket can hold. `fill_time_s` sets how long it takes to refill the bucket. If `capacity` and `fill_time_s` are `NA`, their value is set to the number of name in `x`, effectively removing any rate-limit.
+
+The `timeout` argument is passed to `httr2::req_options()`. `timeout` gives the time in seconds to wait before disconnecting from an unresponsive request.
