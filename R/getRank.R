@@ -75,7 +75,8 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
     # Construct API calls for taxon concept
     api_call_list <- list()
     for (i in seq_along(xc)) {
-      api_call_list[[i]] <- callAPI(xc[i], 
+      api_vars <- list(searchString = xc[i])
+      api_call_list[[i]] <- callAPI(api_vars, 
         query = query_taxonConceptById(),
         capacity = capacity,
         fill_time_s = fill_time_s,
@@ -154,7 +155,7 @@ listRanks <- function() {
   "
 
   # Run query
-  req <- callAPI("", query = q)
+  req <- callAPI(vars = NULL, query = q)
   req <- httr2::req_perform(req)
   out <- unname(unlist(httr2::resp_body_json(req)))
 

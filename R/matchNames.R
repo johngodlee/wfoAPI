@@ -212,12 +212,15 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
   if (useAPI & length(xun) > 0) {
     api_call_list <- list()
     for (i in seq_along(xun)) {
-      api_call_list[[i]] <- callAPI(xun[i], 
+      api_vars <- list(
+        searchString = xun[i],
+        fallbackToGenus = fallbackToGenus, 
+        checkRank = checkRank,
+        checkHomonyms = checkHomonyms,
+        fuzzyNameParts = fuzzyNameParts)
+
+      api_call_list[[i]] <- callAPI(api_vars, 
           query = query_taxonNameMatch(), 
-          fallbackToGenus = fallbackToGenus, 
-          checkRank = checkRank,
-          checkHomonyms = checkHomonyms,
-          fuzzyNameParts = fuzzyNameParts,
           capacity = capacity,
           fill_time_s = fill_time_s,
           timeout = timeout)

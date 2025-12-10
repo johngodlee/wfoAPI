@@ -1,3 +1,30 @@
+#' Reusable GraphQL fields for taxon objects
+#' 
+#' @return character string with WFO GraphQL API query
+#' 
+#' @noRd
+#' 
+wfo_query_fields <- function() {
+  "id
+   fullNameStringNoAuthorsPlain
+   authorsString
+   nomenclaturalStatus
+   role
+   rank
+   wfoPath
+   currentPreferredUsage {
+     hasName {
+       id
+       fullNameStringNoAuthorsPlain
+       authorsString
+       nomenclaturalStatus
+       role
+       rank
+       wfoPath
+     }
+   }"
+}
+
 #' Define WFO GraphQL API query for name matching
 #'
 #' @return character string with WFO GraphQL API query
@@ -5,7 +32,7 @@
 #' @noRd
 #' 
 query_taxonNameMatch <- function() {
-  "query NameMatch(
+  paste0("query NameMatch(
     $searchString: String, 
     $checkHomonyms: Boolean,
     $checkRank: Boolean,
@@ -22,87 +49,30 @@ query_taxonNameMatch <- function() {
       ) {
         inputString
         searchString
-        match {
-          id
-          fullNameStringNoAuthorsPlain
-          authorsString
-          nomenclaturalStatus
-          role
-          rank
-          wfoPath
-          currentPreferredUsage {
-            hasName {
-              id
-              fullNameStringNoAuthorsPlain
-              authorsString
-              nomenclaturalStatus
-              role
-              rank
-              wfoPath
-            }
-          }
-        }
-        candidates {
-          id
-          fullNameStringNoAuthorsPlain
-          authorsString
-          nomenclaturalStatus
-          role
-          rank
-          wfoPath
-          currentPreferredUsage {
-            hasName {
-              id
-              fullNameStringNoAuthorsPlain
-              authorsString
-              nomenclaturalStatus
-              role
-              rank
-              wfoPath
-            }
-          }
-        }
+        match { ", wfo_query_fields(), " }
+        candidates { ", wfo_query_fields(), "}
         error
         errorMessage
         method
         narrative
       }
-    }"
+    }")
 }
 
-#' Define WFO GraphQL API query for WFO ID matching
+#' Define WFO GraphQL API query for WFO ID name matching
 #'
 #' @return character string with WFO GraphQL API query
 #' 
 #' @noRd
 #' 
 query_taxonNameById <- function() {
-  "query NameByID(
+  paste0("query NameByID(
     $searchString: String)
     {
       taxonNameById(
         nameId: $searchString
-      ) {
-        id
-        fullNameStringNoAuthorsPlain
-        authorsString
-        nomenclaturalStatus
-        role
-        rank
-        wfoPath
-        currentPreferredUsage {
-          hasName {
-            id
-            fullNameStringNoAuthorsPlain
-            authorsString
-            nomenclaturalStatus
-            role
-            rank
-            wfoPath
-          }
-        }
-      }
-    }"
+      ) { ", wfo_query_fields(), " }
+    }")
 }
 
 #' Define WFO GraphQL API query for WFO ID concept matching
@@ -135,7 +105,6 @@ query_taxonConceptById <- function() {
   }"
 }
 
-
 #' Define WFO GraphQL API query for current backbone version
 #' 
 #' Used to return higher order taxonomic rank information
@@ -152,4 +121,5 @@ query_classifications <- function() {
     }
   "
 }
+
 

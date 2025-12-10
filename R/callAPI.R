@@ -1,9 +1,9 @@
 #' Call the WorldFlora API to match a taxonomic name
 #'
-#' @param x taxonomic name to be searched 
+#' @param vars list of variables used in query
 #' @param query GraphQL API query string, e.g. as returned
 #'     `query_taxonNameMatch()`, `query_taxonNameById()`
-#'     `query_taxonConceptById()`
+#'     `query_taxonConceptById()`, `query_classifications()`
 #' @param fallbackToGenus logical, if TRUE genus-level matches will be returned
 #'     if no species-level match is available
 #' @param checkRank logical, if TRUE consider matches to be ambiguous if it is
@@ -23,25 +23,14 @@
 #' @return object containing API call
 #' 
 #' @noRd
-#' @examples
-#' callAPI("Burkea africana", query_taxonNameMatch())
-#' callAPI("wfo-0000214110", query_taxonNameById())
 #'
-callAPI <- function(x, query, fallbackToGenus = FALSE, checkRank = FALSE, 
-  checkHomonyms = FALSE, fuzzyNameParts = 3, capacity = 60, fill_time_s = 60, timeout = 10) {
+callAPI <- function(vars, query, capacity = 60, fill_time_s = 60, timeout = 10) {
 
   # Create request 
   req <- httr2::request(getOption("wfo.api_uri"))
 
   # Prepare body of call
-  variables <- list(
-    searchString = x, 
-    fallbackToGenus = fallbackToGenus,
-    checkRank = checkRank,
-    checkHomonyms = checkHomonyms,
-    fuzzyNameParts = fuzzyNameParts
-  )
-  payload <- list(query = query, variables = variables)
+  payload <- list(query = query, variables = vars)
 
   # Set body
   req <- httr2::req_body_json(req, payload, auto_unbox = TRUE)

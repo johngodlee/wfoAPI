@@ -1,7 +1,7 @@
 #' Manually pick a taxonomic name from a list returned by the WFO GraphQL API
 #'
-#' @param x original taxonomic name searched by `callAPI()`
-#' @param cand list of candidate taxa returned by `callAPI()`
+#' @param x original taxonomic name 
+#' @param cand list of candidate taxa 
 #' @param offset initial index value used internally by pager, controls index
 #'     of page start
 #' @param page_size index value used internally by pager, controls page length
@@ -9,11 +9,6 @@
 #'     unresponsive request
 #'
 #' @return list containing information of matched taxonomic name
-#' 
-#' @examples
-#' x <- "Burkea af"
-#' resp <- callAPI(x, query_taxonNameMatch())
-#' pickName(x, resp$data$taxonNameMatch$candidates)
 #' 
 #' @noRd
 #' 
@@ -74,7 +69,8 @@ pickName <- function(x, cand, offset = 0, page_size = 10, timeout = 10) {
       valid <- TRUE
     } else if (grepl("^wfo-[0-9]{10}$", tolower(trimws(input)))) {
       input <- tolower(trimws(input))
-      api_call <- callAPI(input, 
+      api_vars <- list(searchString = input)
+      api_call <- callAPI(api_vars, 
         query_taxonNameById(), timeout = timeout)
       api_resp <- httr2::req_perform(api_call)
       api_json <- httr2::resp_body_json(api_resp)
