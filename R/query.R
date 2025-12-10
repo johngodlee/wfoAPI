@@ -134,3 +134,22 @@ query_taxonConceptById <- function() {
     }
   }"
 }
+
+
+#' Define WFO GraphQL API query for current backbone version
+#' 
+#' Used to return higher order taxonomic rank information
+#'
+#' @return character string with WFO GraphQL API query
+#' 
+#' @noRd
+#' 
+query_classifications <- function() { 
+  "query {
+      classifications(classificationId: \"DEFAULT\") {
+        id
+      }
+    }
+  "
+}
+

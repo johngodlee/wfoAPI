@@ -4,7 +4,15 @@
 \alias{getRank}
 \title{Get higher order taxonomic information for WFO IDs}
 \usage{
-getRank(x, rank = NULL, capacity = 60, fill_time_s = 60, timeout = 10)
+getRank(
+  x,
+  rank = NULL,
+  useCache = FALSE,
+  useAPI = TRUE,
+  capacity = 60,
+  fill_time_s = 60,
+  timeout = 10
+)
 }
 \arguments{
 \item{x}{vector of WFO IDs, e.g. "wfo-0000214110". Note IDs must be of
@@ -14,6 +22,11 @@ taxonomic information.}
 \item{rank}{optional character vector of desired ranks. If NULL (default),
 all higher order taxonomic information is returned. Return all available
 ranks with \code{listRanks()}}
+
+\item{useCache}{logical, if TRUE use cached values in
+\code{wfo_cache_get()} preferentially, to reduce the number of API calls}
+
+\item{useAPI}{logical, if TRUE (default) allow API calls}
 
 \item{capacity}{maximum number of API calls which can accumulate over the
 duration of \code{fill_time_s}. See documentation for \code{httr2::req_throttle()}

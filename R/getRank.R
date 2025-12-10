@@ -63,15 +63,7 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
     req <- httr2::request(getOption("wfo.api_uri"))
 
     # Get the most recent taxonomic backbone classification
-    q <- "
-      query {
-        classifications(classificationId: \"DEFAULT\") {
-          id
-        }
-      }
-    "
-
-    classif_payload <- list(query = q)
+    classif_payload <- list(query = query_classifications())
     classif_req <- httr2::req_body_json(req, classif_payload, auto_unbox = TRUE)
     classif_resp <- httr2::req_perform(classif_req)
     classif_json <- httr2::resp_body_json(classif_resp)
