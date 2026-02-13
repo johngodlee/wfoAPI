@@ -8,9 +8,8 @@ matchNames(
   x,
   interactive = TRUE,
   sub_pattern = subPattern(),
-  tolower = FALSE,
-  nonumber = FALSE,
-  nobracket = FALSE,
+  tolower = TRUE,
+  nonumber = TRUE,
   preferAccepted = FALSE,
   preferFuzzy = FALSE,
   useCache = FALSE,
@@ -37,14 +36,11 @@ from names in \code{x} using \code{gsub()}. The order of this vector matters,
 substitutions are applied sequentially. Sensible defaults are provided
 by \code{subPattern()}}
 
-\item{tolower}{logical, if TRUE names are converted to all lower case
+\item{tolower}{logical, if TRUE (default) names are converted to all lower case
 characters}
 
-\item{nonumber}{logical, if TRUE names containing numbers will be
+\item{nonumber}{logical, if TRUE (default) names containing numbers will be
 interpreted as genera, only matching the first word}
-
-\item{nobracket}{logical If TRUE characters occurring after "(" or ")" will
-be removed. Note this could also remove authorities.}
 
 \item{preferAccepted}{logical, if TRUE, if multiple ambiguous matches are
 found, and if only one candidate is an "accepted" name,
@@ -94,7 +90,7 @@ names in \code{x}, or a list containing unique values in \code{x} if raw = TRUE
 \describe{
 \item{taxon_name_orig}{Original name as in \code{x}}
 \item{taxon_name_subm}{Name after optional sanitisation according to
-\code{sub_pattern}, \code{tolower}, \code{nonumber}, and \code{nobracket}}
+\code{sub_pattern}, \code{tolower}, \code{nonumber}}
 \item{method}{The method by which the name was matched. Either: "AUTO" if
 a single non-ambiguous accepted name was matched, "AUTO ACC" if
 preferAccepted = TRUE and a single accepted name was found among the
@@ -110,7 +106,6 @@ were found}
 \item{preferFuzzy}{Value of argument in function call}
 \item{tolower}{Value of argument in function call}
 \item{nonumber}{Value of argument in function call}
-\item{nobracket}{Value of argument in function call}
 \item{taxon_wfo_syn}{WFO ID of matched name}
 \item{taxon_name_syn}{Taxonomic name of matched name}
 \item{taxon_auth_syn}{Authority of matched name}

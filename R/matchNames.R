@@ -12,12 +12,10 @@
 #'     from names in `x` using `gsub()`. The order of this vector matters,
 #'     substitutions are applied sequentially. Sensible defaults are provided
 #'     by `subPattern()`
-#' @param tolower logical, if TRUE names are converted to all lower case
+#' @param tolower logical, if TRUE (default) names are converted to all lower case
 #'     characters 
-#' @param nonumber logical, if TRUE names containing numbers will be
+#' @param nonumber logical, if TRUE (default) names containing numbers will be
 #'     interpreted as genera, only matching the first word
-#' @param nobracket logical If TRUE characters occurring after "(" or ")" will
-#'     be removed. Note this could also remove authorities.
 #' @param preferAccepted logical, if TRUE, if multiple ambiguous matches are
 #'     found, and if only one candidate is an "accepted" name,
 #'     automatically choose that name
@@ -55,7 +53,7 @@
 #' \describe{
 #'   \item{taxon_name_orig}{Original name as in `x`}
 #'   \item{taxon_name_subm}{Name after optional sanitisation according to
-#'   `sub_pattern`, `tolower`, `nonumber`, and `nobracket`}
+#'   `sub_pattern`, `tolower`, `nonumber`}
 #'   \item{method}{The method by which the name was matched. Either: "AUTO" if
 #'   a single non-ambiguous accepted name was matched, "AUTO ACC" if
 #'   preferAccepted = TRUE and a single accepted name was found among the
@@ -71,7 +69,6 @@
 #'   \item{preferFuzzy}{Value of argument in function call}
 #'   \item{tolower}{Value of argument in function call}
 #'   \item{nonumber}{Value of argument in function call}
-#'   \item{nobracket}{Value of argument in function call}
 #'   \item{taxon_wfo_syn}{WFO ID of matched name}
 #'   \item{taxon_name_syn}{Taxonomic name of matched name}
 #'   \item{taxon_auth_syn}{Authority of matched name}
@@ -112,10 +109,10 @@
 #' matchNames(x, interactive = FALSE)
 #'
 matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(), 
-  tolower = FALSE, nonumber = FALSE, nobracket = FALSE, 
-  preferAccepted = FALSE, preferFuzzy = FALSE, useCache = FALSE, useAPI = TRUE, 
-  fallbackToGenus = FALSE, checkRank = FALSE, checkHomonyms = TRUE, fuzzyNameParts = 3, 
-  raw = FALSE, capacity = 60, fill_time_s = 60, timeout = 10) {
+  tolower = TRUE, nonumber = TRUE, preferAccepted = FALSE, preferFuzzy = FALSE, 
+  useCache = FALSE, useAPI = TRUE, fallbackToGenus = FALSE, checkRank = FALSE, 
+  checkHomonyms = TRUE, fuzzyNameParts = 3, raw = FALSE, capacity = 60, 
+  fill_time_s = 60, timeout = 10) {
 
   # If API throttling arguments are empty, set to generous values 
   if (is.na(capacity)) { 
@@ -168,11 +165,6 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
   if (nonumber) { 
     has_num <- grepl("[0-9]", xsub)
     xsub[has_num] <- gsub("\\s.*", "", xsub[has_num])
-  }
-
-  # Optionally remove characters after parentheses
-  if (nobracket) {
-    xsub <- gsub("\\(.*|\\).*", "", xsub)
   }
 
   # Remove leading and trailing whitespace and multiple spaces
@@ -274,7 +266,8 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
           match_api_list[[i]]$method <- "AUTO FUZZY"
         } else if (interactive) {
           # Interactive name picking
-          match_api_list[[i]] <- pickName(xun[i], api_json_list[[i]]$data$taxonNameMatch$candidates)
+          match_api_list[[i]] <- pickName(xun[i], 
+            api_json_list[[i]]$data$taxonNameMatch$candidates)
         } else {
           # No successful match
           cat(sprintf("No match for: %s\n", xun[i]))
@@ -282,10 +275,15 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
           match_api_list[[i]]$method <- "EMPTY"
         }
       } else {
-        # No candidates 
-        cat(sprintf("No candidates for: %s\n", xun[i]))
-        match_api_list[[i]] <- list()
-        match_api_list[[i]]$method <- "EMPTY"
+        if (interactive) { 
+          match_api_list[[i]] <- pickName(xun[i], 
+            api_json_list[[i]]$data$taxonNameMatch$candidates)
+        } else {
+          # No candidates 
+          cat(sprintf("No candidates for: %s\n", xun[i]))
+          match_api_list[[i]] <- list()
+          match_api_list[[i]]$method <- "EMPTY"
+        }
       }
 
       # Add query parameters
@@ -298,7 +296,6 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
       match_api_list[[i]]$preferFuzzy <- preferFuzzy 
       match_api_list[[i]]$tolower <- tolower 
       match_api_list[[i]]$nonumber <- nonumber 
-      match_api_list[[i]]$nobracket <- nobracket 
     }
     names(match_api_list) <- xun
 
@@ -334,7 +331,6 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
           preferFuzzy = null2na(i$preferFuzzy),
           tolower = null2na(i$tolower),
           nonumber = null2na(i$nonumber),
-          nobracket = null2na(i$nobracket),
           taxon_wfo_syn = null2na(i$id),
           taxon_name_syn = null2na(i$fullNameStringNoAuthorsPlain),
           taxon_auth_syn = null2na(i$authorsString),
@@ -359,7 +355,6 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
           preferFuzzy = i$preferFuzzy,
           tolower = i$tolower,
           nonumber = i$nonumber,
-          nobracket = i$nobracket,
           taxon_wfo_syn = NA_character_,
           taxon_name_syn = NA_character_,
           taxon_auth_syn = NA_character_,
