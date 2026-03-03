@@ -63,11 +63,7 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
     req <- httr2::request(getOption("wfo.api_uri"))
 
     # Get the most recent taxonomic backbone classification
-    classif_payload <- list(query = query_classifications())
-    classif_req <- httr2::req_body_json(req, classif_payload, auto_unbox = TRUE)
-    classif_resp <- httr2::req_perform(classif_req)
-    classif_json <- httr2::resp_body_json(classif_resp)
-    classif <- unlist(classif_json)
+    classif <- wfoVersion()
 
     # Create WFO ID string with classification
     xc <- paste0(xsub, "-", classif)

@@ -5,7 +5,7 @@
 #' @noRd
 #' 
 null2na <- function(x) {
-  if (is.null(x)) {
+  if (is.null(x) | length(x) == 0) {
     NA_character_ 
   } else { 
     x

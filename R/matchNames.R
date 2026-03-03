@@ -170,12 +170,15 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
   # Remove leading and trailing whitespace and multiple spaces
   xsub <- trimws(gsub("\\s+", " ", xsub))
 
+  # Replace empty strings with NA
+  xsub[xsub == ""] <- NA_character_
+
   # Extract unique names 
   xun <- sort(unique(xsub))
 
   # Optionally search cache for names
   match_cache_list <- list()
-  if (useCache) {
+  if (useCache & length(xun) > 0) {
     # Extract cached names
     match_cache_list <- wfo_cache_get()$matchNames[xun]
     match_cache_list[sapply(match_cache_list, is.null)] <- NULL
