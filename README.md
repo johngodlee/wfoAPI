@@ -6,6 +6,8 @@ Unlike the [WorldFlora](https://cran.r-project.org/web/packages/WorldFlora/index
 
 Use the `matchNames()` function with a vector of taxonomic names to return matched names from the World Flora Online database.
 
+Use the `getRank()` function with a vector of WFO IDs for accepted names to return higher order taxonomic ranks from the World Flora Online database.
+
 Features:
 
 * Server-side fuzzy matching of names

@@ -22,7 +22,7 @@
 #' @export
 #' 
 getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE, 
-  capacity = 60, fill_time_s = 60, timeout = 10) {
+  raw = FALSE, capacity = 60, fill_time_s = 60, timeout = 10) {
 
   if (!useCache & !useAPI) {
     stop("Either useCache or useAPI must be TRUE")
@@ -62,11 +62,11 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
     # Create request 
     req <- httr2::request(getOption("wfo.api_uri"))
 
-    # Get the most recent taxonomic backbone classification
-    classif <- wfoVersion()
+    # Set WFO version
+    wfo_version <- wfoVersion()
 
-    # Create WFO ID string with classification
-    xc <- paste0(xsub, "-", classif)
+    # Create WFO ID string with WFO version
+    xc <- paste0(xsub, "-", wfo_version)
 
     # Construct API calls for taxon concept
     api_call_list <- list()
@@ -85,7 +85,7 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
     # Convert API responses to JSON
     api_resp_list <- lapply(api_req_list, httr2::resp_body_json)
 
-    # For each species 
+    # For each taxon ID 
     match_api_list <- lapply(seq_along(api_resp_list), function(y) { 
       do.call(rbind, lapply(api_resp_list[[y]]$data$taxonConceptById$path, function(z) {
         data.frame(
@@ -95,7 +95,8 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
           taxon_stat_acc = null2na(z$hasName$nomenclaturalStatus),
           taxon_role_acc = null2na(z$hasName$role),
           taxon_rank_acc = null2na(z$hasName$rank),
-          taxon_path_acc = null2na(z$hasName$wfoPath)
+          taxon_path_acc = null2na(z$hasName$wfoPath),
+          wfo_version = wfo_version
         )
       }))
     })
@@ -128,7 +129,22 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
   }
 
   # Order by x
-  out <- match_list_sel[x]
+  match_all <- match_list_sel[x]
+
+  # Optionally create formatted dataframe
+  if (!raw) { 
+    out <- do.call(rbind, lapply(names(match_all), function(y) {
+      match_df <- data.frame(taxon_wfo_acc = y)
+      match_val <- match_all[[y]][
+        match(rank, match_all[[y]]$taxon_rank_acc), "taxon_name_acc"]
+      names(match_val) <- paste0("taxon_", rank, "_acc")
+      match_df <- cbind(match_df, data.frame(as.list(match_val)))
+      match_df$wfo_version <- match_all[[y]]$wfo_version[1]
+      match_df
+    }))
+  } else {
+    out <- match_all
+  }
 
   # Return
   return(out)

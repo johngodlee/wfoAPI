@@ -227,6 +227,9 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
     # Convert API responses to JSON
     api_json_list <- lapply(api_resp_list, httr2::resp_body_json)
 
+    # Set WFO version
+    wfo_version <- wfoVersion()
+
     # Collect matched names 
     for (i in seq_along(api_json_list)) {
 
@@ -299,6 +302,7 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
       match_api_list[[i]]$preferFuzzy <- preferFuzzy 
       match_api_list[[i]]$tolower <- tolower 
       match_api_list[[i]]$nonumber <- nonumber 
+      match_api_list[[i]]$wfo_version <- wfo_version 
     }
     names(match_api_list) <- xun
 
@@ -325,15 +329,6 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
       if ("id" %in% names(i)) {
         data.frame(
           taxon_name_subm = null2na(i$submitted_name),
-          method = null2na(i$method),
-          fallbackToGenus = null2na(i$fallbackToGenus),
-          checkRank = null2na(i$checkRank),
-          checkHomonyms = null2na(i$checkHomonyms),
-          fuzzyNameParts = null2na(i$fuzzyNameParts),
-          preferAccepted = null2na(i$preferAccepted),
-          preferFuzzy = null2na(i$preferFuzzy),
-          tolower = null2na(i$tolower),
-          nonumber = null2na(i$nonumber),
           taxon_wfo_syn = null2na(i$id),
           taxon_name_syn = null2na(i$fullNameStringNoAuthorsPlain),
           taxon_auth_syn = null2na(i$authorsString),
@@ -345,10 +340,7 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
           taxon_auth_acc = null2na(i$currentPreferredUsage$hasName$authorsString),
           taxon_stat_acc = null2na(i$currentPreferredUsage$hasName$nomenclaturalStatus),
           taxon_role_acc = null2na(i$currentPreferredUsage$hasName$role),
-          taxon_rank_acc = null2na(i$currentPreferredUsage$hasName$rank))
-      } else { 
-        data.frame(
-          taxon_name_subm = i$submitted_name,
+          taxon_rank_acc = null2na(i$currentPreferredUsage$hasName$rank),
           method = i$method,
           fallbackToGenus = i$fallbackToGenus,
           checkRank = i$checkRank,
@@ -358,6 +350,11 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
           preferFuzzy = i$preferFuzzy,
           tolower = i$tolower,
           nonumber = i$nonumber,
+          wfo_version = i$wfo_version
+        )
+      } else { 
+        data.frame(
+          taxon_name_subm = i$submitted_name,
           taxon_wfo_syn = NA_character_,
           taxon_name_syn = NA_character_,
           taxon_auth_syn = NA_character_,
@@ -369,7 +366,18 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
           taxon_auth_acc = NA_character_,
           taxon_stat_acc = NA_character_,
           taxon_role_acc = NA_character_,
-          taxon_rank_acc = NA_character_)
+          taxon_rank_acc = NA_character_,
+          method = i$method,
+          fallbackToGenus = i$fallbackToGenus,
+          checkRank = i$checkRank,
+          checkHomonyms = i$checkHomonyms,
+          fuzzyNameParts = i$fuzzyNameParts,
+          preferAccepted = i$preferAccepted,
+          preferFuzzy = i$preferFuzzy,
+          tolower = i$tolower,
+          nonumber = i$nonumber,
+          wfo_version = i$wfo_version
+        )
       }
     }))
 

@@ -1,4 +1,4 @@
-#' Reusable GraphQL fields for taxon objects
+#' Reusable GraphQL fields for taxon objects)
 #' 
 #' @return character string with WFO GraphQL API query
 #' 
