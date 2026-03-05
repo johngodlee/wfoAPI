@@ -16,8 +16,21 @@
 #' @param timeout time in seconds to wait before disconnecting from an
 #'     unresponsive request
 #'
-#' @return list of dataframes with the higher order taxonomic ranks of each of
-#'     the submitted WFO IDs
+#' @return dataframe with higher order taxonomic names of each submitted WFO ID
+#'
+#' @references 
+#' Borsch, T. et al. (2020). _World Flora Online: Placing taxonomists at the
+#' heart of a definitive and comprehensive global resource on the world's
+#' plants_. TAXON, 69, 6. doi10.1002/tax.12373:
+#' 
+#' @author John L. Godlee
+#' 
+#' @examples
+#' listRanks()
+#' x <- c("wfo-4000011857", "wfo-0000455689")
+#' getRank(x)
+#' getRank(x, raw = TRUE)
+#' getRank(x, rank = c("species", "family")
 #' 
 #' @export
 #' 
@@ -26,6 +39,11 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
 
   if (!useCache & !useAPI) {
     stop("Either useCache or useAPI must be TRUE")
+  }
+
+  # Check that all WFO IDs are valid
+  if (any(!grepl("^wfo-\\d{10}$", x))) {
+    stop("x must only contain WFO IDs, formatted 'wfo-1234567890'")
   }
 
   # Check if WFO API is reachable 
@@ -135,8 +153,14 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
   if (!raw) { 
     out <- do.call(rbind, lapply(names(match_all), function(y) {
       match_df <- data.frame(taxon_wfo_acc = y)
+
+      if (is.null(rank)) {
+        rank <- match_all[[y]]$taxon_rank_acc
+      }
+
       match_val <- match_all[[y]][
         match(rank, match_all[[y]]$taxon_rank_acc), "taxon_name_acc"]
+
       names(match_val) <- paste0("taxon_", rank, "_acc")
       match_df <- cbind(match_df, data.frame(as.list(match_val)))
       match_df$wfo_version <- match_all[[y]]$wfo_version[1]

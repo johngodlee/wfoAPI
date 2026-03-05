@@ -9,6 +9,7 @@ getRank(
   rank = NULL,
   useCache = FALSE,
   useAPI = TRUE,
+  raw = FALSE,
   capacity = 60,
   fill_time_s = 60,
   timeout = 10
@@ -37,9 +38,24 @@ calls. See documentation for \code{httr2::req_throttle()}}
 unresponsive request}
 }
 \value{
-list of dataframes with the higher order taxonomic ranks of each of
-the submitted WFO IDs
+dataframe with higher order taxonomic names of each submitted WFO ID
 }
 \description{
 Get higher order taxonomic information for WFO IDs
+}
+\examples{
+listRanks()
+x <- c("wfo-4000011857", "wfo-0000455689")
+getRank(x)
+getRank(x, raw = TRUE)
+getRank(x, rank = c("species", "family")
+
+}
+\references{
+Borsch, T. et al. (2020). \emph{World Flora Online: Placing taxonomists at the
+heart of a definitive and comprehensive global resource on the world's
+plants}. TAXON, 69, 6. doi10.1002/tax.12373:
+}
+\author{
+John L. Godlee
 }

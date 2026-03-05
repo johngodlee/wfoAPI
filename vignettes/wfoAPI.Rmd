@@ -39,19 +39,19 @@ remotes::install_github("johngodlee/wfoAPI")
 
 ## Basic usage
 
-The primary function in the package is `matchNames()`, which takes a vector of taxonomic names and returns matched names from the WFO database.
+The primary function in the package is `matchName()`, which takes a vector of taxonomic names and returns matched names from the WFO database.
 
 ```{r}
 library(wfoAPI)
 
 # Match a single species name
-t(matchNames("Burkea africana"))
+t(matchName("Burkea africana"))
 ```
 
 The function returns a data frame with the following information:
 
 * `taxon_name_orig` - Original name as in `x`
-* `taxon_name_subm` - Name after optional sanitisation according to `sub_pattern`, `tolower`, `nonumber`, and `nobracket`
+* `taxon_name_subm` - Name after optional sanitisation according to `sub_pattern`, `tolower`, `nonumber`
 * `method` - The method by which the name was matched. Either: "AUTO" if a single non-ambiguous accepted name was matched, "AUTO ACC" if preferAccepted = TRUE and a single accepted name was found among the possible candidate names, "AUTO FUZZY" if preferFuzzy = TRUE and at least one accepted name was found among the possible candidate names, "MANUAL" if interactive = TRUE and the user picked a name, or "EMPTY" if no matches were found
 * `fallbackToGenus` - Value of argument in function call
 * `checkRank` - Value of argument in function call
@@ -61,7 +61,6 @@ The function returns a data frame with the following information:
 * `preferFuzzy` - Value of argument in function call
 * `tolower` - Value of argument in function call
 * `nonumber` - Value of argument in function call
-* `nobracket` - Value of argument in function call
 * `taxon_wfo_syn` - WFO ID of matched name
 * `taxon_name_syn` - Taxonomic name of matched name
 * `taxon_auth_syn` - Authority of matched name
@@ -75,7 +74,7 @@ The function returns a data frame with the following information:
 * `taxon_role_acc` - Taxonomic role of accepted name, e.g. "accepted", "synonym", "unplaced", etc
 * `taxon_rank_acc` - Taxonomic rank of accepted name, e.g. "species", "genus", "family", etc
 
-`matchNames()` can process multiple names efficiently:
+`matchName()` can process multiple names efficiently:
 
 ```{r}
 # Vector of plant names
@@ -87,70 +86,64 @@ x <- c(
 )
 
 # Match all names
-matchNames(x)
+matchName(x)
 ```
 
 Return raw list output with `raw = TRUE`:
 
 ```{r}
-matchNames("Burkea africana", raw = TRUE)
+matchName("Burkea africana", raw = TRUE)
 ```
 
 When a submitted name is a synonym, the function automatically retrieves the currently accepted name:
 
 ```{r}
-t(matchNames("Lonchocarpus nelsii"))
+t(matchName("Lonchocarpus nelsii"))
 ```
 
 ## Selection algorithms
 
-The WFO API performs server-side fuzzy matching to handle spelling variations and errors. Where a name is not uniquely matched a list of fuzzy-matched candidates is returned. The arguments provided to `matchNames()` alter how these candidate names are handled.
+The WFO API performs server-side fuzzy matching to handle spelling variations and errors. Where a name is not uniquely matched a list of fuzzy-matched candidates is returned. The arguments provided to `matchName()` alter how these candidate names are handled.
 
 If `interactive = TRUE`, you can manually select the correct candidate:
 
 ```{r eval=FALSE}
 # NOT RUN
-matchNames("Ochna pul", interactive = TRUE)
+matchName("Ochna pul", interactive = TRUE)
 ```
 
 If `preferAccepted = TRUE`, if only one candidate is an "accepted" name, this name is automatically selected.
 
 ```{r}
-t(matchNames("Strychnos pungens", interactive = TRUE, preferAccepted = TRUE))
+t(matchName("Strychnos pungens", interactive = TRUE, preferAccepted = TRUE))
 ```
 
 If `interactive = FALSE` and `preferFuzzy = TRUE`, the accepted name with the lowest Levenshtein distance from the submitted name from the list of fuzzily-matched candidates:
 
 ```{r}
-t(matchNames("Brachystegia spic", interactive = FALSE, preferFuzzy = TRUE))
+t(matchName("Brachystegia spic", interactive = FALSE, preferFuzzy = TRUE))
 ```
 
 ## Sanitising names
 
-Other arguments to `matchNames()` control how names are pre-processed before being sent to the WFO API. 
+Other arguments to `matchName()` control how names are pre-processed before being sent to the WFO API. 
 
 `sub_pattern` contains a vector of regex patterns which will be sequentially removed from the values in `x`. `subPattern()` returns an example with commonly used patterns:
 
 ```{r}
-t(matchNames("Burkea### africana", sub_pattern = "#+"))
+t(matchName("Burkea### africana", sub_pattern = "#+"))
 ```
 
 `tolower = TRUE` converts names to lower case:
 
 ```{r}
-t(matchNames("bUrKEA AfriCANA", tolower = TRUE))
+t(matchName("bUrKEA AfriCANA", tolower = TRUE))
 ```
 
 If `nonumber = TRUE`, names with numbers will be shortened just to the first word, e.g. the genus:
 
 ```{r}
-t(matchNames("Burkea africana 1", nonumber = TRUE))
-```
-
-If `nobracket = TRUE`, characters after parentheses (brackets, "(" or ")") will be removed. Be warned, this can also erroneously remove authorities:
-
-```{r}
-t(matchNames("Burkea africana (looks like it)", nobracket = TRUE))
+t(matchName("Burkea africana 1", nonumber = TRUE))
 ```
 
 ## Extracting higher order taxonomy information
@@ -158,7 +151,7 @@ t(matchNames("Burkea africana (looks like it)", nobracket = TRUE))
 The function `getRank()` allows you to retrieve information information on higher taxonomic ranks using the WFO IDs of any accepted names.
 
 ```{r}
-res <- matchNames("Burkea africana")
+res <- matchName("Burkea africana")
 
 getRank(res$taxon_wfo_acc)
 ```
@@ -168,6 +161,18 @@ You can also specify ranks to extract:
 ```{r}
 getRank(res$taxon_wfo_acc, rank = c("genus", "phylum"))
 ```
+
+Like `matchName()` this function can also return raw values as a list.
+
+## Extracting taxonomy information from a WFO ID
+
+WFO IDs can also be used to query the WFO database using the `getName()` function. This function returns similar variables to the `matchName()` function.
+
+```{r}
+getName(c("wfo-0000455689", "wfo-0001049423", "wfo-4000011857"))
+```
+
+Like `matchName()` this function can also return raw values as a list.
 
 ## Caching results
 
@@ -188,24 +193,24 @@ wfo_cache_get()
 ```
 
 ```{r}
-res <- matchNames("Burkea africana")
+res <- matchName("Burkea africana")
 
-names(wfo_cache_get()$matchNames)
+names(wfo_cache_get()$matchName)
 ```
 
 ```{r}
 wfo_cache_clear()
 
-names(wfo_cache_get()$matchNames)
+names(wfo_cache_get()$matchName)
 ```
 
-`wfo_cache_get()` points to `the$wfo_cache`. The cache contains two lists, one for the results of `matchNames()` (`the$wfo_cache$matchNames`) and one for the results of `getRank()` (`the$wfo_cache$getRank`).
+`wfo_cache_get()` points to `the$wfo_cache`. The cache contains two lists, one for the results of `matchName()` (`the$wfo_cache$matchName`) and one for the results of `getRank()` (`the$wfo_cache$getRank`).
 
-To use cached names, set argument `useCache = TRUE` in `matchNames()`. Similarly, you can disable API access and only use the cache, by setting argument `useAPI = FALSE`.
+To use cached names, set argument `useCache = TRUE` in `matchName()`. Similarly, you can disable API access and only use the cache, by setting argument `useAPI = FALSE`.
 
 ## Managing API load
 
-`matchNames()` and `getRank()` both have arguments to limit the rate of API calls, to avoid overloading the API.
+`matchName()`, `getRank()`, and `getName()` have arguments to limit the rate of API calls, to avoid overloading the API.
 
 Arguments `capacity` and `fill_time_s` are passed to `httr2::req_throttle()`. See the help files for these functions for more details. In short, rate limiting is managed with a bucket system. Each name submitted represents one token. `capacity` sets how many tokens the bucket can hold. `fill_time_s` sets how long it takes to refill the bucket. If `capacity` and `fill_time_s` are `NA`, their value is set to the number of name in `x`, effectively removing any rate-limit.
 

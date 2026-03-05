@@ -48,8 +48,8 @@
 #' @param timeout time in seconds to wait before disconnecting from an
 #'     unresponsive request
 #'
-#' @return data.frame containing taxonomic name information with rows matching
-#'     names in `x`, or a list containing unique values in `x` if raw = TRUE
+#' @return dataframe containing taxonomic name information with rows matching
+#'     names in `x`
 #' \describe{
 #'   \item{taxon_name_orig}{Original name as in `x`}
 #'   \item{taxon_name_subm}{Name after optional sanitisation according to
@@ -103,12 +103,12 @@
 #' @examples
 #' x <- c("Burkea africana", "Julbernardia paniculata", "Fabaceae", 
 #'   "Indet indet", "Brachystegia")
-#' matchNames(x)
-#' matchNames(x, raw = TRUE)
-#' matchNames(x, fallbackToGenus = TRUE)
-#' matchNames(x, interactive = FALSE)
+#' matchName(x)
+#' matchName(x, raw = TRUE)
+#' matchName(x, fallbackToGenus = TRUE)
+#' matchName(x, interactive = FALSE)
 #'
-matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(), 
+matchName <- function(x, interactive = TRUE, sub_pattern = subPattern(), 
   tolower = TRUE, nonumber = TRUE, preferAccepted = FALSE, preferFuzzy = FALSE, 
   useCache = FALSE, useAPI = TRUE, fallbackToGenus = FALSE, checkRank = FALSE, 
   checkHomonyms = TRUE, fuzzyNameParts = 3, raw = FALSE, capacity = 60, 
@@ -161,7 +161,7 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
     }
   } 
 
-  # Optionally converts names with a number to genera (first word only)
+  # Optionally convert names with a number to genera (first word only)
   if (nonumber) { 
     has_num <- grepl("[0-9]", xsub)
     xsub[has_num] <- gsub("\\s.*", "", xsub[has_num])
@@ -180,7 +180,7 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
   match_cache_list <- list()
   if (useCache & length(xun) > 0) {
     # Extract cached names
-    match_cache_list <- wfo_cache_get()$matchNames[xun]
+    match_cache_list <- wfo_cache_get()$matchName[xun]
     match_cache_list[sapply(match_cache_list, is.null)] <- NULL
 
     # Remove names matched in cache from vector of names
@@ -390,8 +390,8 @@ matchNames <- function(x, interactive = TRUE, sub_pattern = subPattern(),
   # Non-ambiguous automatic matches and manual assertions only
   match_good_list <- match_list[
     unlist(lapply(match_list, "[[", "method")) %in% c("AUTO", "MANUAL") &
-    !names(match_list) %in% names(wfo_cache_get()$matchNames)]
-  the$wfo_cache$matchNames <- c(wfo_cache_get()$matchNames, match_good_list)
+    !names(match_list) %in% names(wfo_cache_get()$matchName)]
+  the$wfo_cache$matchName <- c(wfo_cache_get()$matchName, match_good_list)
 
   # Return
   return(out)

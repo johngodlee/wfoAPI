@@ -1,4 +1,4 @@
-# Get the most recent WFO taxonomic backbone classification
+#' Get the most recent WFO taxonomic backbone classification
 #'
 #' @return character string with WFO taxonomic backbone classification. A 
 #'     YYYY-MM date
