@@ -6,7 +6,7 @@
 #' @export
 #' 
 wfoVersion <- function() { 
-  req <- httr2::request(getOption("wfo.api_uri"))
+  req <- httr2::request(.get_api_uri()[1])
   classif_payload <- list(query = query_classifications())
   classif_req <- httr2::req_body_json(req, classif_payload, auto_unbox = TRUE)
   classif_resp <- httr2::req_perform(classif_req)

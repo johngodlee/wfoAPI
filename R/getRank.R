@@ -47,8 +47,8 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
   }
 
   # Check if WFO API is reachable 
-  if (useAPI && !checkURL(getOption("wfo.api_uri"))) {
-    w <- paste("WFO API unreachable:", getOption("wfo.api_uri"))
+  if (useAPI && !checkURL(.get_api_uri()[1])) {
+    w <- paste("WFO API unreachable:", .get_api_uri()[1])
     if (useCache) {
       warning(w, "\nOnly cached names will be filled")
       useAPI <- FALSE
@@ -78,7 +78,7 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
   match_api_list <- list()
   if (useAPI & length(xsub) > 0) {
     # Create request 
-    req <- httr2::request(getOption("wfo.api_uri"))
+    req <- httr2::request(.get_api_uri()[1])
 
     # Set WFO version
     wfo_version <- wfoVersion()

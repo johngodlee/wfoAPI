@@ -135,8 +135,8 @@ matchName <- function(x, interactive = TRUE, sub_pattern = subPattern(),
   }
 
   # Check if WFO API is reachable 
-  if (useAPI && !checkURL(getOption("wfo.api_uri"))) {
-    w <- paste("WFO API unreachable:", getOption("wfo.api_uri"))
+  if (useAPI && !checkURL(.get_api_uri()[1])) {
+    w <- paste("WFO API unreachable:", .get_api_uri()[1])
     if (useCache) {
       warning(w, "\nOnly cached names will be filled")
       useAPI <- FALSE

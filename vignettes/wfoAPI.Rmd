@@ -27,6 +27,7 @@ The `wfoAPI` package provides a simple interface to the World Flora Online (WFO)
 - **Synonym resolution**: Automatically retrieve accepted names for synonyms
 - **Taxonomic hierarchy**: Access higher-order taxonomic information (family, order, etc.)
 - **Caching support**: Reduce API calls by caching results
+- **User-specified API endpoint**: Use custom deployments of the WFO database 
 
 ## Installation
 
@@ -215,3 +216,5 @@ To use cached names, set argument `useCache = TRUE` in `matchName()`. Similarly,
 Arguments `capacity` and `fill_time_s` are passed to `httr2::req_throttle()`. See the help files for these functions for more details. In short, rate limiting is managed with a bucket system. Each name submitted represents one token. `capacity` sets how many tokens the bucket can hold. `fill_time_s` sets how long it takes to refill the bucket. If `capacity` and `fill_time_s` are `NA`, their value is set to the number of name in `x`, effectively removing any rate-limit.
 
 The `timeout` argument is passed to `httr2::req_options()`. `timeout` gives the time in seconds to wait before disconnecting from an unresponsive request.
+
+The user can specify a custom API endpoint either before or after the package has loaded, either as an 'option' (`options("wfo.api_uri" = "<URL>")`) or an environment variable stored in `.Renviron` (`Sys.setenv(WFO_API_URI = "<URL>")`).

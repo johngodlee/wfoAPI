@@ -27,7 +27,7 @@
 callAPI <- function(vars, query, capacity = 60, fill_time_s = 60, timeout = 10) {
 
   # Create request 
-  req <- httr2::request(getOption("wfo.api_uri"))
+  req <- httr2::request(.get_api_uri()[1])
 
   # Prepare body of call
   payload <- list(query = query, variables = vars)
