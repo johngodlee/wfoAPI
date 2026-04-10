@@ -16,6 +16,8 @@
 #'     calls. See documentation for `httr2::req_throttle()`
 #' @param timeout time in seconds to wait before disconnecting from an
 #'     unresponsive request
+#' @param wfo_version optional, WFO backbone release version, as `"YYYY-MM"`. 
+#'     If `NULL`, `wfoVersion()` provides the most recent version.
 #'
 #' @return dataframe with taxonomic name information for each submitted WFO ID
 #' \describe{
@@ -54,7 +56,7 @@
 #' getName(x, raw = TRUE)
 #'
 getName <- function(x, useCache = FALSE, useAPI = TRUE, raw = FALSE, 
-  capacity = 60, fill_time_s = 60, timeout = 10) {
+  capacity = 60, fill_time_s = 60, timeout = 10, wfo_version = NULL) {
 
   # If API throttling arguments are empty, set to generous values 
   if (is.na(capacity)) { 
@@ -134,7 +136,9 @@ getName <- function(x, useCache = FALSE, useAPI = TRUE, raw = FALSE,
     match_api_list <- lapply(api_resp_list, httr2::resp_body_json)
 
     # Set WFO version
-    wfo_version <- wfoVersion()
+    if (is.null(wfo_version)) {
+      wfo_version <- wfoVersion()
+    }
 
     # Collect matched names 
     for (i in seq_along(match_api_list)) {

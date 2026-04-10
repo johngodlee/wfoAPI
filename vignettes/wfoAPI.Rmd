@@ -209,6 +209,21 @@ names(wfo_cache_get()$matchName)
 
 To use cached names, set argument `useCache = TRUE` in `matchName()`. Similarly, you can disable API access and only use the cache, by setting argument `useAPI = FALSE`.
 
+# Specifying versions of the WFO taxonomic backbone
+
+`wfoVersion()` provides the most recent version of the WFO database as a "YYYY-MM" character string. `getRank()`, `matchName()` and `getName()` allow the user to optionally specify a version of the WFO database. Versions of the database are generally released in June (06) and December (12) each year, going back to June 2018 ("2018-06").
+
+```{r}
+wfo_version_vec <- paste0(as.character(seq(2021, 2025, 1)), "-06")
+
+ex_rank <- matchName("Hiptage triacantha")$taxon_wfo_acc
+
+sapply(wfo_version_vec, function(x) { 
+  message(x)
+  getName(ex_rank, wfo_version = x)
+})
+```
+
 ## Managing API load
 
 `matchName()`, `getRank()`, and `getName()` have arguments to limit the rate of API calls, to avoid overloading the API.

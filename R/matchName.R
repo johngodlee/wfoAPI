@@ -47,6 +47,8 @@
 #'     calls. See documentation for `httr2::req_throttle()`
 #' @param timeout time in seconds to wait before disconnecting from an
 #'     unresponsive request
+#' @param wfo_version optional, WFO backbone release version, as `"YYYY-MM"`. 
+#'     If `NULL`, `wfoVersion()` provides the most recent version.
 #'
 #' @return dataframe containing taxonomic name information with rows matching
 #'     names in `x`
@@ -112,7 +114,7 @@ matchName <- function(x, interactive = TRUE, sub_pattern = subPattern(),
   tolower = TRUE, nonumber = TRUE, preferAccepted = FALSE, preferFuzzy = FALSE, 
   useCache = FALSE, useAPI = TRUE, fallbackToGenus = FALSE, checkRank = FALSE, 
   checkHomonyms = TRUE, fuzzyNameParts = 3, raw = FALSE, capacity = 60, 
-  fill_time_s = 60, timeout = 10) {
+  fill_time_s = 60, timeout = 10, wfo_version = NULL) {
 
   # If API throttling arguments are empty, set to generous values 
   if (is.na(capacity)) { 
@@ -227,8 +229,10 @@ matchName <- function(x, interactive = TRUE, sub_pattern = subPattern(),
     # Convert API responses to JSON
     api_json_list <- lapply(api_resp_list, httr2::resp_body_json)
 
-    # Set WFO version
-    wfo_version <- wfoVersion()
+    # Set WFO version if not provided by user
+    if (is.null(wfo_version)) {
+      wfo_version <- wfoVersion()
+    }
 
     # Collect matched names 
     for (i in seq_along(api_json_list)) {

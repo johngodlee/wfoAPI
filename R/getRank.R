@@ -15,6 +15,8 @@
 #'     calls. See documentation for `httr2::req_throttle()`
 #' @param timeout time in seconds to wait before disconnecting from an
 #'     unresponsive request
+#' @param wfo_version optional, WFO backbone release version, as `"YYYY-MM"`. 
+#'     If `NULL`, `wfoVersion()` provides the most recent version.
 #'
 #' @return dataframe with higher order taxonomic names of each submitted WFO ID
 #'
@@ -35,7 +37,7 @@
 #' @export
 #' 
 getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE, 
-  raw = FALSE, capacity = 60, fill_time_s = 60, timeout = 10) {
+  raw = FALSE, capacity = 60, fill_time_s = 60, timeout = 10, wfo_version = NULL) {
 
   if (!useCache & !useAPI) {
     stop("Either useCache or useAPI must be TRUE")
@@ -80,8 +82,10 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
     # Create request 
     req <- httr2::request(.get_api_uri()[1])
 
-    # Set WFO version
-    wfo_version <- wfoVersion()
+    # Set WFO version if not provided by user
+    if (is.null(wfo_version)) {
+      wfo_version <- wfoVersion()
+    }
 
     # Create WFO ID string with WFO version
     xc <- paste0(xsub, "-", wfo_version)

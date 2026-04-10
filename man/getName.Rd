@@ -11,7 +11,8 @@ getName(
   raw = FALSE,
   capacity = 60,
   fill_time_s = 60,
-  timeout = 10
+  timeout = 10,
+  wfo_version = NULL
 )
 }
 \arguments{
@@ -32,6 +33,9 @@ calls. See documentation for \code{httr2::req_throttle()}}
 
 \item{timeout}{time in seconds to wait before disconnecting from an
 unresponsive request}
+
+\item{wfo_version}{optional, WFO backbone release version, as \code{"YYYY-MM"}.
+If \code{NULL}, \code{wfoVersion()} provides the most recent version.}
 }
 \value{
 dataframe with taxonomic name information for each submitted WFO ID
