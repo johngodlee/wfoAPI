@@ -226,8 +226,19 @@ matchName <- function(x, interactive = TRUE, sub_pattern = subPattern(),
     # Submit API calls
     api_resp_list <- httr2::req_perform_parallel(api_call_list)
 
-    # Convert API responses to JSON
-    api_json_list <- lapply(api_resp_list, httr2::resp_body_json)
+    # Convert API responses to JSON safely
+    api_json_list <- lapply(api_resp_list, function(resp) {
+      # Check if the object is a valid response and contains a body
+      if (inherits(resp, "httr2_response") && httr2::resp_has_body(resp)) {
+        tryCatch({
+          httr2::resp_body_json(resp)
+        }, error = function(e) {
+          NULL # Return NULL if JSON parsing fails despite having a body
+        })
+      } else {
+        NULL # Return NULL if there is no response body
+      }
+    })
 
     # Set WFO version if not provided by user
     if (is.null(wfo_version)) {
@@ -392,9 +403,17 @@ matchName <- function(x, interactive = TRUE, sub_pattern = subPattern(),
 
   # Store good API results in cache
   # Non-ambiguous automatic matches and manual assertions only
-  match_good_list <- match_list[
-    unlist(lapply(match_list, "[[", "method")) %in% c("AUTO", "MANUAL") &
-    !names(match_list) %in% names(wfo_cache_get()$matchName)]
+  # Check method of each item without dropping NULLs
+  is_good_method <- sapply(match_list, function(x) {
+    isTRUE(x$method %in% c("AUTO", "MANUAL"))
+  })
+  
+  # Check which names are not already in the cache
+  is_not_cached <- !names(match_list) %in% names(wfo_cache_get()$matchName)
+  
+  # Subset using the properly aligned logical vectors
+  match_good_list <- match_list[is_good_method & is_not_cached]
+  
   the$wfo_cache$matchName <- c(wfo_cache_get()$matchName, match_good_list)
 
   # Return

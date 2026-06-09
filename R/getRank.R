@@ -59,22 +59,25 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
     }
   }
 
+  # Extract unique names 
+  xun <- sort(unique(x))
+
   # Optionally search cache for names
   match_cache_list <- list()
   if (useCache) {
     # Extract cached names
-    match_cache_list <- wfo_cache_get()$getRank[x]
+    match_cache_list <- wfo_cache_get()$getRank[xun]
     match_cache_list[sapply(match_cache_list, is.null)] <- NULL
 
     # Remove names matched in cache from vector of names
-    xsub <- x[!x %in% names(match_cache_list)]
+    xsub <- xun[!xun %in% names(match_cache_list)]
 
     # Message
     if (length(match_cache_list) > 0) {
       cat(sprintf("Using cached data for %s IDs\n", length(match_cache_list)), "\n")
     }
   } else {
-    xsub <- x
+    xsub <- xun
   }
 
   match_api_list <- list()
@@ -144,7 +147,7 @@ getRank <- function(x, rank = NULL, useCache = FALSE, useAPI = TRUE,
 
   # Add missing values
   # Not matched by cache or API
-  match_miss <- x[!x %in% names(match_list_sel)]
+  match_miss <- xun[!xun %in% names(match_list_sel)]
   if (length(match_miss) > 0) {
     match_list_sel <- c(match_list_sel, 
       setNames(vector("list", length(match_miss)), match_miss))
