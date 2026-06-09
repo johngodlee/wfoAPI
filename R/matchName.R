@@ -246,7 +246,10 @@ matchName <- function(x, interactive = TRUE, sub_pattern = subPattern(),
     }
 
     # Collect matched names 
-    for (i in seq_along(api_json_list)) {
+    i <- 1
+    pick_hist <- integer(0) 
+    while (i <= length(api_json_list)) { 
+      is_back <- FALSE
 
       # If unambiguous match found
       if (!is.null(api_json_list[[i]]$data$taxonNameMatch$match)) {
@@ -287,8 +290,16 @@ matchName <- function(x, interactive = TRUE, sub_pattern = subPattern(),
           match_api_list[[i]]$method <- "AUTO FUZZY"
         } else if (interactive) {
           # Interactive name picking
-          match_api_list[[i]] <- pickName(xun[i], 
+          match_res <- pickName(xun[i], 
             api_json_list[[i]]$data$taxonNameMatch$candidates)
+           
+          # Check if user went back
+          if (match_res$method == "BACK") {
+            is_back <- TRUE
+          } else {
+            match_api_list[[i]] <- match_res
+            pick_hist <- c(pick_hist, i)
+          }
         } else {
           # No successful match
           cat(sprintf("No match for: %s\n", xun[i]))
@@ -297,14 +308,34 @@ matchName <- function(x, interactive = TRUE, sub_pattern = subPattern(),
         }
       } else {
         if (interactive) { 
-          match_api_list[[i]] <- pickName(xun[i], 
+          match_res <- pickName(xun[i], 
             api_json_list[[i]]$data$taxonNameMatch$candidates)
+
+          if (match_res$method == "BACK") { 
+            is_back <- TRUE
+          } else {
+            match_api_list[[i]] <- match_res
+            pick_hist <- c(pick_hist, i)
+          }
         } else {
           # No candidates 
           cat(sprintf("No candidates for: %s\n", xun[i]))
           match_api_list[[i]] <- list()
           match_api_list[[i]]$method <- "EMPTY"
         }
+      }
+
+      # Handle backward step if triggered
+      if (is_back) {
+        if (length(pick_hist) > 0) {
+          i <- pick_hist[length(pick_hist)]
+          pick_hist <- pick_hist[-length(pick_hist)]
+          cat("\n--- Going back to previous entry ---\n")
+        } else {
+          cat("\n--- Already on the first entry, cannot go back. ---\n")
+        }
+        # Skip metadata assignment and loop increment, restart loop
+        next 
       }
 
       # Add query parameters
@@ -318,6 +349,9 @@ matchName <- function(x, interactive = TRUE, sub_pattern = subPattern(),
       match_api_list[[i]]$tolower <- tolower 
       match_api_list[[i]]$nonumber <- nonumber 
       match_api_list[[i]]$wfo_version <- wfo_version 
+
+      # Increment index
+      i <- i + 1
     }
     names(match_api_list) <- xun
 

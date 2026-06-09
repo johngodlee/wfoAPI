@@ -22,7 +22,7 @@ pickName <- function(x, cand, offset = 0, page_size = 10, timeout = 10) {
     cat(sprintf("\n\nNo candidates for: %s\n", x))
     while (!valid) {
       # Prompt user for input
-      prompt <- "Enter a valid WFO ID, 'S', or press Enter to skip. "
+      prompt <- "Enter a valid WFO ID, 'S'/Enter (skip), 'B' (back to previous)." 
       input <- tolower(trimws(readline(prompt)))
 
       # If a valid WFO ID, search for that
@@ -38,6 +38,10 @@ pickName <- function(x, cand, offset = 0, page_size = 10, timeout = 10) {
       # If skipped deliberately by user
       } else if (tolower(input) %in% c("s", "")) {
         match <- list(method = "SKIP")
+        valid <- TRUE
+      # If move back to previous entry
+      } else if (tolower(input) == "b") {
+        match <- list(method = "BACK")
         valid <- TRUE
       # If invalid input
       } else {
@@ -83,7 +87,8 @@ pickName <- function(x, cand, offset = 0, page_size = 10, timeout = 10) {
       "a valid WFO ID,", 
       "'N' for the next page,", 
       "'P' for the previous page,",
-      "'S' or press Enter to skip: ")
+      "'B' to go back to previous entry,",
+      "'S'/Enter to skip: ")
 
     # Prompt the user for input
     input <- trimws(readline(prompt))
@@ -118,6 +123,9 @@ pickName <- function(x, cand, offset = 0, page_size = 10, timeout = 10) {
       }
     } else if (tolower(input) %in% c("s", "")) {
       match <- list(method = "SKIP")
+      valid <- TRUE
+    } else if (tolower(input) == "b") {
+      match <- list(method = "BACK")
       valid <- TRUE
     } else {
       cat("Invalid input.\n")
