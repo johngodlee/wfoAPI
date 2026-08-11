@@ -53,7 +53,7 @@
 #' @return dataframe containing taxonomic name information with rows matching
 #'     names in `x`
 #' \describe{
-#'   \item{taxon_name_orig}{Original name as in `x`}
+#'   \item{taxon_name_raw}{Original name as in `x`}
 #'   \item{taxon_name_subm}{Name after optional sanitisation according to
 #'   `sub_pattern`, `tolower`, `nonumber`}
 #'   \item{method}{The method by which the name was matched. Either: "AUTO" if
@@ -431,7 +431,7 @@ matchName <- function(x, interactive = TRUE, sub_pattern = subPattern(),
     }))
 
     # Match row order of dataframe to x
-    out <- cbind(taxon_name_orig = x, match_df[match(xsub, match_df$taxon_name_subm),])
+    out <- cbind(taxon_name_raw = x, match_df[match(xsub, match_df$taxon_name_subm),])
     rownames(out) <- NULL
   }
 

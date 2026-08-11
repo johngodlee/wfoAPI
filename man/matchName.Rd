@@ -92,7 +92,7 @@ If \code{NULL}, \code{wfoVersion()} provides the most recent version.}
 dataframe containing taxonomic name information with rows matching
 names in \code{x}
 \describe{
-\item{taxon_name_orig}{Original name as in \code{x}}
+\item{taxon_name_raw}{Original name as in \code{x}}
 \item{taxon_name_subm}{Name after optional sanitisation according to
 \code{sub_pattern}, \code{tolower}, \code{nonumber}}
 \item{method}{The method by which the name was matched. Either: "AUTO" if

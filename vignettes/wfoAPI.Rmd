@@ -51,7 +51,7 @@ t(matchName("Burkea africana"))
 
 The function returns a data frame with the following information:
 
-* `taxon_name_orig` - Original name as in `x`
+* `taxon_name_raw` - Original name as in `x`
 * `taxon_name_subm` - Name after optional sanitisation according to `sub_pattern`, `tolower`, `nonumber`
 * `method` - The method by which the name was matched. Either: "AUTO" if a single non-ambiguous accepted name was matched, "AUTO ACC" if preferAccepted = TRUE and a single accepted name was found among the possible candidate names, "AUTO FUZZY" if preferFuzzy = TRUE and at least one accepted name was found among the possible candidate names, "MANUAL" if interactive = TRUE and the user picked a name, or "EMPTY" if no matches were found
 * `fallbackToGenus` - Value of argument in function call
